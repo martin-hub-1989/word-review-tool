@@ -806,7 +806,6 @@ function drawSpell(it, isSpell1, allowHint){
   const card=$("gameCard");
   card.innerHTML=`
     <div class="prompt-cn">${it.meaning}</div>
-    ${it.ipa?`<div class="prompt-ipa">${it.ipa}</div>`:""}
     <button class="btn small speakbtn" id="spk">🔊 听发音</button>
     <div class="slots" id="slots"></div>
     ${it.type==="phrase"?'<p class="hint">这是个词组,注意空格</p>':''}
@@ -942,7 +941,7 @@ function renderCloze(it){
   card.innerHTML=`
     <div class="sentence">${blanked}</div>
     ${it.exampleMeaning?`<div class="prompt-cn" style="font-size:18px;color:var(--muted)">${it.exampleMeaning}</div>`:""}
-    <div class="prompt-ipa">提示:${it.meaning}${it.ipa?(' '+it.ipa):''}</div>
+    <div class="prompt-ipa">提示:${it.meaning}</div>
     <button class="btn small speakbtn" id="spk">🔊 听整句</button>
     <div class="slots" id="slots"></div>`;
   $("spk").onclick=()=>speak(sentence);
