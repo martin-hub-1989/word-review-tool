@@ -301,10 +301,16 @@
   </div>
 </div>
 
-<!-- 本地打包的 pdf.js(离线可用)。file:// 下 Worker 受限时,pdf.js 自动回退到主线程解析 -->
+<!-- 本地打包的 pdf.js(离线可用)。
+     file:// 协议下浏览器禁止创建 Web Worker,因此把 worker 脚本也用普通 <script> 直接引入:
+     这样 globalThis.pdfjsWorker 存在,pdf.js 会在主线程用 fake worker 解析,无需真 Worker。 -->
 <script src="lib/pdf.min.js"></script>
+<script src="lib/pdf.worker.min.js"></script>
 <script>
-  if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc = "lib/pdf.worker.min.js"; }
+  if(window.pdfjsLib){
+    // 仍设 workerSrc 作为兜底;但因 pdfjsWorker 全局已存在,实际走主线程 fake worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "lib/pdf.worker.min.js";
+  }
 </script>
 
 <script>
@@ -380,7 +386,8 @@ async function handlePdfFile(file){
   toast("正在解析 PDF…");
   try{
     const buf=await file.arrayBuffer();
-    const pdf=await pdfjsLib.getDocument({data:buf, disableWorker:true}).promise;
+    // 不传 disableWorker(3.x 无此选项);worker 脚本已作为 <script> 加载,pdf.js 走主线程 fake worker
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
     let allText="";
     for(let p=1;p<=pdf.numPages;p++){
       const page=await pdf.getPage(p);
@@ -397,8 +404,8 @@ async function handlePdfFile(file){
       openPdfModal(file.name, items, false);
     }
   }catch(e){
-    console.error(e);
-    toast("PDF 解析失败,建议把它发给 Claude 生成词库 😕");
+    console.error("PDF 解析错误:", e);
+    toast("PDF 解析失败:"+(e&&e.message?e.message:"未知错误")+" —— 可发给 Claude 生成词库");
   }
 }
 
