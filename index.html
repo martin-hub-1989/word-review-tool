@@ -83,6 +83,8 @@
   .tile:hover{transform:translateY(-5px); box-shadow:var(--shadow-lg); border-color:#e4dccf;}
   .tile:hover::before{transform:scaleX(1);}
   .tile.sel{border-color:var(--primary);}
+  .tile-total{background:linear-gradient(180deg,#fffdf8,#fdf6e8);border-color:#f0e2c4;}
+  .tile-total::before{transform:scaleX(1);background:linear-gradient(90deg,var(--amber),var(--primary));}
   .tile .emoji{font-size:34px;display:block;margin-bottom:10px;}
   .tile .t-title{font-weight:800;font-size:16px;letter-spacing:-.2px;}
   .tile .t-sub{color:var(--muted);font-size:12.5px;margin-top:5px;font-weight:600;}
@@ -170,6 +172,21 @@
   .toast.show{opacity:.96;transform:translateX(-50%) translateY(0);}
   .empty{text-align:center;color:var(--muted);padding:34px;font-weight:600;}
   .section-label{font-weight:800;font-size:15px;letter-spacing:-.2px;display:flex;align-items:center;gap:7px;}
+
+  /* 模态层(PDF 解析确认) */
+  .modal-mask{position:fixed;inset:0;background:rgba(43,42,46,.42);backdrop-filter:blur(3px);
+              display:none;align-items:center;justify-content:center;z-index:60;padding:18px;}
+  .modal-mask.show{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1);}
+  .modal{background:var(--card);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);
+         border:1px solid var(--line);padding:24px;max-width:560px;width:100%;max-height:88vh;overflow:auto;}
+  .modal h3{font-size:20px;letter-spacing:-.3px;}
+  .field{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .field label{flex:none;width:74px;}
+  .field input,.field select{flex:1;}
+  #pdfText{width:100%;min-height:200px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13.5px;
+           line-height:1.7;padding:12px;border-radius:12px;border:1.5px solid var(--line);
+           background:var(--paper);color:var(--ink);resize:vertical;}
+  #pdfText:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
 </style>
 </head>
 <body>
@@ -184,11 +201,11 @@
       <div class="topbar">
         <span class="section-label">📚 选择词库</span>
         <span>
-          <button class="btn green small filebtn">＋ 加载词库<input type="file" id="loadBank" accept=".json" multiple></button>
+          <button class="btn green small filebtn">＋ 加载词库<input type="file" id="loadBank" accept=".json,.pdf" multiple></button>
         </span>
       </div>
       <div id="bankList" class="grid"></div>
-      <p class="hint">把 Claude 生成的词库 JSON 文件加载进来。已加载的词库会记住,下次自动出现。</p>
+      <p class="hint">支持加载 JSON 词库,或 PDF 单词表(文字版可直接解析;扫描版请发给 Claude 生成)。已加载的词库会记住,下次自动出现。</p>
     </div>
 
     <div class="card">
@@ -211,7 +228,7 @@
     <div class="grid" id="modeGrid"></div>
 
     <div class="card" id="wrongbankCard">
-      <div class="topbar"><span class="section-label">📒 错题本</span><span id="wrongCount" class="badge">0 题</span></div>
+      <div class="topbar"><span class="section-label" id="wrongLabel">📒 错题本</span><span id="wrongCount" class="badge">0 题</span></div>
       <p class="hint">第一次没做对、或答得太慢的题会进这里。连续答对 3 次就毕业!</p>
       <div class="btn-row" style="justify-content:flex-start"><button class="btn orange" id="practiceWrong">开始练习错题本</button></div>
     </div>
@@ -260,6 +277,35 @@
 
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- PDF 解析确认弹层 -->
+<div id="pdfModal" class="modal-mask">
+  <div class="modal">
+    <h3 style="margin:0 0 4px">从 PDF 生成子库</h3>
+    <p class="hint" style="text-align:left;margin:0 0 14px" id="pdfModalInfo"></p>
+    <div class="field"><label>孩子:</label><input type="text" id="pdfChild" placeholder="如 哥哥 / 弟弟"></div>
+    <div class="field"><label>子库名称:</label><input type="text" id="pdfTitle" placeholder="如 四年级下 Unit 5"></div>
+    <div class="field"><label>年级:</label>
+      <select id="pdfGrade">
+        <option value="1">一年级</option><option value="2">二年级</option>
+        <option value="3">三年级</option><option value="4" selected>四年级</option>
+        <option value="5">五年级</option><option value="6">六年级</option>
+      </select>
+    </div>
+    <p class="hint" style="text-align:left">下面是从 PDF 抽取的词条,可直接编辑(每行一条,格式:<b>英文 = 中文</b>)。音标、例句留待发我生成精品词库时补全。</p>
+    <textarea id="pdfText" spellcheck="false"></textarea>
+    <div class="btn-row" style="justify-content:flex-end;margin-top:14px">
+      <button class="btn gray small" id="pdfCancel">取消</button>
+      <button class="btn green small" id="pdfConfirm">生成子库</button>
+    </div>
+  </div>
+</div>
+
+<!-- 本地打包的 pdf.js(离线可用)。file:// 下 Worker 受限时,pdf.js 自动回退到主线程解析 -->
+<script src="lib/pdf.min.js"></script>
+<script>
+  if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc = "lib/pdf.worker.min.js"; }
+</script>
 
 <script>
 /* =========================================================
@@ -324,6 +370,115 @@ function addBank(data){
   toast("已加载:"+data.meta.title);
 }
 
+/* =========================================================
+   PDF 解析(浏览器内,本地 pdf.js)
+   ========================================================= */
+let pdfPendingItems=null;
+
+async function handlePdfFile(file){
+  if(!window.pdfjsLib){ toast("PDF 库未加载,请把 PDF 发给 Claude 生成词库 🙂"); return; }
+  toast("正在解析 PDF…");
+  try{
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf, disableWorker:true}).promise;
+    let allText="";
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const content=await page.getTextContent();
+      // 按 y 坐标聚行,保留换行结构
+      const lines=groupLines(content.items);
+      allText += lines.join("\n")+"\n";
+    }
+    const items=parseWordLines(allText);
+    if(items.length===0){
+      // 很可能是扫描版 / 图片型 PDF
+      openPdfModal(file.name, [], true);
+    } else {
+      openPdfModal(file.name, items, false);
+    }
+  }catch(e){
+    console.error(e);
+    toast("PDF 解析失败,建议把它发给 Claude 生成词库 😕");
+  }
+}
+
+/* 把 pdf.js 的零散文本块按行(y 坐标)聚合 */
+function groupLines(items){
+  const rows={};
+  items.forEach(it=>{
+    if(!it.str || !it.str.trim()) return;
+    const y=Math.round(it.transform[5]); // 基线 y
+    (rows[y]=rows[y]||[]).push({x:it.transform[4], s:it.str});
+  });
+  return Object.keys(rows)
+    .sort((a,b)=>b-a) // 从上到下
+    .map(y=> rows[y].sort((a,b)=>a.x-b.x).map(o=>o.s).join(" ").replace(/\s+/g," ").trim())
+    .filter(Boolean);
+}
+
+/* 从文本行解析 英文/中文 词条对。支持多种分隔:tab、空格、破折号、冒号 */
+function parseWordLines(text){
+  const out=[]; const seen=new Set();
+  text.split("\n").forEach(raw=>{
+    let line=raw.trim();
+    if(!line) return;
+    // 提取英文部分(开头连续的英文/空格/'/-)与中文部分
+    const m=line.match(/^([a-zA-Z][a-zA-Z'’\- ]*[a-zA-Z.?!]|[a-zA-Z])\s*[:：=\-—\t]*\s*([一-龥。，、；！？…·（）()A-Za-z ]+)?$/);
+    if(!m) return;
+    let en=(m[1]||"").trim();
+    let cn=(m[2]||"").trim();
+    if(!en || en.length<1) return;
+    if(!/[a-zA-Z]/.test(en)) return;
+    const key=en.toLowerCase();
+    if(seen.has(key)) return; seen.add(key);
+    // 判断类型
+    const wordCount=en.split(/\s+/).length;
+    let type="word";
+    if(/[.?!]$/.test(en) || wordCount>=4) type="sentence";
+    else if(wordCount>=2) type="phrase";
+    out.push({ word:en, meaning:cn||"", ipa:"", type, example:"", exampleMeaning:"" });
+  });
+  return out;
+}
+
+function openPdfModal(fileName, items, scanned){
+  pdfPendingItems=items;
+  $("pdfModalInfo").innerHTML = scanned
+    ? `⚠️ <b>${fileName}</b> 里没抽到文字,可能是<b>扫描/拍照版</b> PDF。浏览器无法识别图片文字。<br>建议:把这个 PDF 直接发给 Claude,我来生成带音标、例句的精品词库。下面也可以手动录入词条。`
+    : `从 <b>${fileName}</b> 抽取到 <b>${items.length}</b> 个词条。请核对并补全中文释义(音标/例句留待发我生成精品词库)。`;
+  // 预填表单
+  const guess=fileName.replace(/\.pdf$/i,"");
+  $("pdfTitle").value=guess;
+  $("pdfChild").value="";
+  $("pdfText").value = items.map(it=> it.word + (it.meaning?(" = "+it.meaning):" = ")).join("\n");
+  $("pdfModal").classList.add("show");
+}
+
+function closePdfModal(){ $("pdfModal").classList.remove("show"); pdfPendingItems=null; }
+
+function confirmPdfModal(){
+  const child=$("pdfChild").value.trim()||"未分组";
+  const title=$("pdfTitle").value.trim()||"未命名子库";
+  const grade=parseInt($("pdfGrade").value,10)||4;
+  // 从 textarea 重新解析(允许家长手动改过)
+  const items=[];
+  $("pdfText").value.split("\n").forEach(line=>{
+    line=line.trim(); if(!line) return;
+    const parts=line.split(/\s*=\s*/);
+    const en=(parts[0]||"").trim();
+    const cn=(parts.slice(1).join("=")||"").trim();
+    if(!en || !/[a-zA-Z]/.test(en)) return;
+    const wc=en.split(/\s+/).length;
+    let type="word";
+    if(/[.?!]$/.test(en)||wc>=4) type="sentence";
+    else if(wc>=2) type="phrase";
+    items.push({ word:en, meaning:cn, ipa:"", type, example:"", exampleMeaning:"" });
+  });
+  if(items.length===0){ toast("没有可用的词条,请至少录入一条 🙂"); return; }
+  addBank({ meta:{child, title, grade}, items });
+  closePdfModal();
+}
+
 function renderBanks(){
   const list=$("bankList"); list.innerHTML="";
   const ids=Object.keys(store.banks);
@@ -333,9 +488,10 @@ function renderBanks(){
   ids.forEach(id=>{ const c=store.banks[id].meta.child||"未分组"; (byChild[c]=byChild[c]||[]).push(id); });
   Object.keys(byChild).forEach(child=>{
     const head=document.createElement("div");
-    head.style.cssText="grid-column:1/-1;font-weight:900;color:var(--muted);margin-top:4px;";
+    head.style.cssText="grid-column:1/-1;font-weight:800;color:var(--muted);margin-top:6px;font-size:14px;";
     head.textContent="👦 "+child;
     list.appendChild(head);
+    // 该孩子名下子库
     byChild[child].forEach(id=>{
       const b=store.banks[id]; const stars=(store.progress[id]||{}).stars||0;
       const wrong=(store.wrong[id]||[]).length;
@@ -348,6 +504,20 @@ function renderBanks(){
       tile.onclick=()=>enterBank(id);
       list.appendChild(tile);
     });
+    // 总库卡片(名下所有子库合并)。仅当有 2 个及以上子库时才显示,单子库无意义
+    if(byChild[child].length>=2){
+      const totItems=byChild[child].reduce((n,id)=>n+store.banks[id].items.length,0);
+      const totWrong=byChild[child].reduce((n,id)=>n+(store.wrong[id]||[]).length,0);
+      const tstars=(store.progress["__total__::"+child]||{}).stars||0;
+      const tile=document.createElement("div");
+      tile.className="tile tile-total";
+      tile.innerHTML=`<span class="emoji">📚</span>
+        <div class="t-title">总库</div>
+        <div class="t-sub">${byChild[child].length} 个子库 · ${totItems} 个条目</div>
+        <div class="badge">⭐ ${tstars}${totWrong?(' · 📒 '+totWrong):''}</div>`;
+      tile.onclick=()=>enterTotal(child);
+      list.appendChild(tile);
+    }
   });
 }
 
@@ -362,12 +532,22 @@ const MODES=[
   {id:"cloze",  emoji:"📝", title:"完形填空",   sub:"句子里敲出单词"},
 ];
 
-let curBankId=null, curWrongMode=false;
+let scope=null; // {kind:'bank'|'total', child, title, bankIds:[...]}
 
+/* 进入一个子库 */
 function enterBank(id){
-  curBankId=id; curWrongMode=false;
   const b=store.banks[id];
-  $("modeCrumbs").textContent=(b.meta.child||"")+" · "+b.meta.title;
+  enterScope({ kind:"bank", child:b.meta.child||"", title:b.meta.title, bankIds:[id] });
+}
+/* 进入某个孩子的总库(名下所有子库合并) */
+function enterTotal(child){
+  const ids=Object.keys(store.banks).filter(id=>(store.banks[id].meta.child||"未分组")===child);
+  enterScope({ kind:"total", child, title:"总库(全部子库)", bankIds:ids });
+}
+
+function enterScope(sc){
+  scope=sc;
+  $("modeCrumbs").textContent=(sc.child||"")+" · "+sc.title;
   const grid=$("modeGrid"); grid.innerHTML="";
   MODES.forEach(m=>{
     const tile=document.createElement("div");
@@ -376,24 +556,54 @@ function enterBank(id){
     tile.onclick=()=>startGame(m.id,false);
     grid.appendChild(tile);
   });
-  $("wrongCount").textContent=(store.wrong[id]||[]).length+" 题";
+  $("wrongLabel").textContent = sc.kind==="total" ? "📒 总库错题本" : "📒 子库错题本";
+  $("wrongCount").textContent=scopeWrong().length+" 题";
   show("mode");
 }
 
+/* ---------- 作用域工具:跨子库取条目 / 取错题 ---------- */
+// 返回作用域内全部条目,每条带 _bid(来源子库)与 _grade
+function scopeItems(){
+  const out=[];
+  scope.bankIds.forEach(bid=>{
+    const b=store.banks[bid]; if(!b) return;
+    const g=b.meta.grade||4;
+    b.items.forEach(it=> out.push(Object.assign({}, it, {_bid:bid, _grade:g})));
+  });
+  return out;
+}
+// 返回作用域内全部错题条目(已映射回 item,带 _bid/_grade)
+function scopeWrongItems(){
+  const out=[];
+  scope.bankIds.forEach(bid=>{
+    const b=store.banks[bid]; if(!b) return;
+    const keys=(store.wrong[bid]||[]).map(w=>w.key);
+    const g=b.meta.grade||4;
+    b.items.forEach(it=>{ if(keys.includes(itemKey(bid,it))) out.push(Object.assign({}, it, {_bid:bid, _grade:g})); });
+  });
+  return out;
+}
+// 作用域内错题原始记录(扁平)
+function scopeWrong(){
+  const out=[];
+  scope.bankIds.forEach(bid=>{ (store.wrong[bid]||[]).forEach(w=>out.push(w)); });
+  return out;
+}
+// 作用域进度存储 id(子库用自身 id;总库用合成 id)
+function scopeProgressId(){ return scope.kind==="total" ? ("__total__::"+scope.child) : scope.bankIds[0]; }
+
 /* =========================================================
-   出题:根据模式与年级筛选条目
+   出题:根据模式与年级筛选条目(作用域内,跨子库)
    ========================================================= */
 function eligibleItems(mode){
-  const items=store.banks[curBankId].items;
+  const items=scopeItems();
   if(mode==="spell1"||mode==="spell2"){
-    // 单词为主;短语在 spell1 也可
     return items.filter(it=> it.type==="word" || (mode==="spell1"&&it.type==="phrase"&&!it.word.includes(" ")));
   }
   if(mode==="mean1"||mode==="mean2"){
     return items.filter(it=> (it.type==="word"||it.type==="phrase") && it.meaning);
   }
   if(mode==="cloze"){
-    // 有例句的单词/短语,或本身是句子(挖一个词)
     return items.filter(it=> (it.example && it.example.split(" ").length>=2) );
   }
   return items;
@@ -408,9 +618,7 @@ function startGame(mode, fromWrong){
   const qcount=parseInt($("qcount").value,10);
   let pool;
   if(fromWrong){
-    const keys=(store.wrong[curBankId]||[]).map(w=>w.key);
-    pool=store.banks[curBankId].items.filter(it=>keys.includes(itemKey(curBankId,it)));
-    pool=pool.filter(it=>isItemUsable(mode,it));
+    pool=scopeWrongItems().filter(it=>isItemUsable(mode,it));
     if(pool.length===0){ toast("错题本里没有适合这个模式的题 🙂"); return; }
   } else {
     pool=eligibleItems(mode);
@@ -424,8 +632,7 @@ function startGame(mode, fromWrong){
 
   game={ mode, queue, idx:0, correct:0, fromWrong,
          startTs:Date.now(), qStartTs:0, attempted:false };
-  const b=store.banks[curBankId];
-  $("gameCrumbs").textContent=(fromWrong?"📒 错题练习 · ":"")+modeTitle(mode);
+  $("gameCrumbs").textContent=(fromWrong?"📒 错题练习 · ":"")+(scope.kind==="total"?"总库 · ":"")+modeTitle(mode);
   show("game");
   nextQuestion();
 }
@@ -450,7 +657,8 @@ function judge(it, isRight){
   if(game.attempted) return; // 防重复
   game.attempted=true;
   const elapsed=(Date.now()-game.qStartTs)/1000;
-  const key=itemKey(curBankId,it);
+  const bid=it._bid;                       // 错题归属其来源子库
+  const key=itemKey(bid, it);
 
   let slow=false;
   if(isRight){
@@ -460,13 +668,13 @@ function judge(it, isRight){
   if(isRight && !slow){
     game.correct++;
     // 错题本中:连续答对 +1,够 3 次毕业
-    if(game.fromWrong) bumpWrongStreak(key, true);
-    else if(isInWrong(key)) bumpWrongStreak(key, true);
+    if(game.fromWrong) bumpWrongStreak(bid, key, true);
+    else if(isInWrong(bid, key)) bumpWrongStreak(bid, key, true);
     flash(true, slow);
   } else {
     // 答错,或答对但太慢 -> 进错题本
-    addToWrong(key);
-    if(game.fromWrong) bumpWrongStreak(key, false); // 错题练习里做错,连击清零
+    addToWrong(bid, key);
+    if(game.fromWrong) bumpWrongStreak(bid, key, false); // 错题练习里做错,连击清零
     flash(false, slow && isRight);
   }
   saveStore();
@@ -494,16 +702,16 @@ function recordTimingAndCheckSlow(mode, x){
   return slow;
 }
 
-/* ---------- 错题本 ---------- */
-function getWrong(){ return store.wrong[curBankId]=store.wrong[curBankId]||[]; }
-function isInWrong(key){ return getWrong().some(w=>w.key===key); }
-function addToWrong(key){
-  const w=getWrong();
+/* ---------- 错题本(按子库 bid 存储) ---------- */
+function getWrong(bid){ return store.wrong[bid]=store.wrong[bid]||[]; }
+function isInWrong(bid, key){ return getWrong(bid).some(w=>w.key===key); }
+function addToWrong(bid, key){
+  const w=getWrong(bid);
   if(!w.some(x=>x.key===key)) w.push({key, streak:0});
 }
-function bumpWrongStreak(key, correct){
-  const w=getWrong(); const e=w.find(x=>x.key===key); if(!e) return;
-  if(correct){ e.streak=(e.streak||0)+1; if(e.streak>=3){ store.wrong[curBankId]=w.filter(x=>x.key!==key); } }
+function bumpWrongStreak(bid, key, correct){
+  const w=getWrong(bid); const e=w.find(x=>x.key===key); if(!e) return;
+  if(correct){ e.streak=(e.streak||0)+1; if(e.streak>=3){ store.wrong[bid]=w.filter(x=>x.key!==key); } }
   else { e.streak=0; }
 }
 
@@ -554,7 +762,7 @@ let spell=null; // {answer, slots:[{ch,fixed,filled}], cursor}
 
 function renderSpell1(it){
   const word=it.word.toLowerCase();
-  const grade=store.banks[curBankId].meta.grade||4;
+  const grade=it._grade||4;
   const letters=word.split("");
   const idxLetters=letters.map((c,i)=>({c,i})).filter(o=>/[a-z]/.test(o.c));
   // 隐藏比例:一年级约 1/3 且偏后,四年级过半随机
@@ -579,7 +787,7 @@ function renderSpell1(it){
 /* 模式 ② 拼写闯关 2 — 全词默写(全部空格) */
 function renderSpell2(it){
   const word=it.word.toLowerCase();
-  const grade=store.banks[curBankId].meta.grade||4;
+  const grade=it._grade||4;
   const slots=word.split("").map(c=> c===" "?{ch:" ",space:true}:{ch:c,fixed:false,filled:false,val:""});
   spell={answer:word, slots, cursor:firstBlank(slots), allowFirstHint:grade<=2};
   drawSpell(it, false, spell.allowFirstHint);
@@ -659,8 +867,8 @@ function checkSpellDone(it){
    模式 ③ 看词选意思 / ④ 看意思选词
    ========================================================= */
 function buildOptions(it, key){
-  // key = "meaning" 或 "word"
-  const pool=store.banks[curBankId].items.filter(x=>x[key] && x[key]!==it[key] && (x.type==="word"||x.type==="phrase"));
+  // key = "meaning" 或 "word";干扰项取自整个作用域
+  const pool=scopeItems().filter(x=>x[key] && x[key]!==it[key] && (x.type==="word"||x.type==="phrase"));
   const distract=shuffle(pool).slice(0,3).map(x=>x[key]);
   const opts=shuffle([it[key], ...distract]);
   // 不足 4 个也可
@@ -777,17 +985,18 @@ function finishGame(){
   const secs=Math.round((Date.now()-game.startTs)/1000);
   const ratio=correct/total;
   let stars = ratio>=1?3 : ratio>=0.7?2 : ratio>=0.4?1 : 0;
-  // 记录最佳星数
+  // 记录最佳星数(按作用域)
   if(!game.fromWrong){
-    const p=store.progress[curBankId]||{stars:0};
-    p.stars=Math.max(p.stars||0, stars); store.progress[curBankId]=p; saveStore();
+    const pid=scopeProgressId();
+    const p=store.progress[pid]||{stars:0};
+    p.stars=Math.max(p.stars||0, stars); store.progress[pid]=p; saveStore();
   }
   $("resultEmoji").textContent = stars===3?"🏆": stars>=1?"🎉":"💪";
   $("resultStars").textContent = "⭐".repeat(stars)+"☆".repeat(3-stars);
   $("resultScore").textContent = `答对 ${correct} / ${total} 题`;
   $("resultTime").textContent = `用时 ${secs} 秒`;
-  const wrongNow=(store.wrong[curBankId]||[]).length;
-  $("resultWrong").textContent = `📒 错题本现有 ${wrongNow} 题`;
+  const wrongNow=scopeWrong().length;
+  $("resultWrong").textContent = `📒 ${scope.kind==="total"?"总库":"本子库"}错题本现有 ${wrongNow} 题`;
   $("againBtn").onclick=()=>startGame(game.mode, game.fromWrong);
   show("result");
 }
@@ -828,27 +1037,32 @@ function manageBanks(){
    事件绑定 & 启动
    ========================================================= */
 $("loadBank").addEventListener("change",(e)=>{
-  [...e.target.files].forEach(f=>{
-    const r=new FileReader();
-    r.onload=()=>{ try{ addBank(JSON.parse(r.result)); }catch(err){ toast("解析失败:"+f.name); } };
-    r.readAsText(f);
+  const files=[...e.target.files];
+  files.forEach(f=>{
+    const name=f.name.toLowerCase();
+    if(name.endsWith(".pdf")){ handlePdfFile(f); }
+    else {
+      const r=new FileReader();
+      r.onload=()=>{ try{ addBank(JSON.parse(r.result)); }catch(err){ toast("解析失败:"+f.name); } };
+      r.readAsText(f);
+    }
   });
   e.target.value="";
 });
 $("importBackup").addEventListener("change",(e)=>{ if(e.target.files[0]) importBackup(e.target.files[0]); e.target.value=""; });
 $("exportBackup").onclick=exportBackup;
 $("manageBanks").onclick=manageBanks;
+$("pdfCancel").onclick=closePdfModal;
+$("pdfConfirm").onclick=confirmPdfModal;
 $("practiceWrong").onclick=()=>{
-  // 错题练习:让用户在适用模式里随机抽,默认用拼写1;若错题不含可拼写项则用意思1
-  curWrongMode=true;
-  // 选一个有题的模式
+  // 错题练习:在作用域错题里挑一个有题的模式开练
+  const wrongItems=scopeWrongItems();
+  if(wrongItems.length===0){ toast("错题本是空的,继续闯关收集错题吧 🙂"); return; }
   const modesToTry=["spell1","spell2","cloze","mean1","mean2"];
   for(const m of modesToTry){
-    const keys=(store.wrong[curBankId]||[]).map(w=>w.key);
-    const pool=store.banks[curBankId].items.filter(it=>keys.includes(itemKey(curBankId,it)) && isItemUsable(m,it));
-    if(pool.length>0){ startGame(m,true); return; }
+    if(wrongItems.some(it=>isItemUsable(m,it))){ startGame(m,true); return; }
   }
-  toast("错题本是空的,继续闯关收集错题吧 🙂");
+  toast("错题本里没有适合的题型 🙂");
 };
 document.querySelectorAll("[data-go]").forEach(b=> b.onclick=()=>show(b.dataset.go));
 
@@ -863,7 +1077,8 @@ function isItemUsable(mode,it){
 renderBanks();
 
 // 调试钩子(便于自动化测试查看内部状态;对正常使用无副作用)
-window._wrt = { getGame:()=>game, getSpell:()=>spell, addBank, startGame, store:()=>store };
+window._wrt = { getGame:()=>game, getSpell:()=>spell, addBank, startGame, enterBank, enterTotal,
+                parseWordLines, store:()=>store, getScope:()=>scope };
 </script>
 </body>
 </html>
