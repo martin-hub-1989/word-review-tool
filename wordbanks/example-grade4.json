@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "child": "哥哥",
+    "title": "四年级下册 示例词库",
+    "grade": 4
+  },
+  "items": [
+    { "word": "weather", "meaning": "天气", "ipa": "/ˈweðər/", "type": "word", "example": "How is the weather today?", "exampleMeaning": "今天天气怎么样?" },
+    { "word": "sunny", "meaning": "晴朗的", "ipa": "/ˈsʌni/", "type": "word", "example": "It is sunny today.", "exampleMeaning": "今天是晴天。" },
+    { "word": "rainy", "meaning": "下雨的", "ipa": "/ˈreɪni/", "type": "word", "example": "It is rainy in spring.", "exampleMeaning": "春天多雨。" },
+    { "word": "cloudy", "meaning": "多云的", "ipa": "/ˈklaʊdi/", "type": "word", "example": "It was cloudy yesterday.", "exampleMeaning": "昨天是多云天。" },
+    { "word": "windy", "meaning": "有风的", "ipa": "/ˈwɪndi/", "type": "word", "example": "It is windy in autumn.", "exampleMeaning": "秋天风大。" },
+    { "word": "snowy", "meaning": "下雪的", "ipa": "/ˈsnoʊi/", "type": "word", "example": "Winter is snowy and cold.", "exampleMeaning": "冬天下雪又寒冷。" },
+    { "word": "spring", "meaning": "春天", "ipa": "/sprɪŋ/", "type": "word", "example": "Flowers come out in spring.", "exampleMeaning": "春天花儿开放。" },
+    { "word": "summer", "meaning": "夏天", "ipa": "/ˈsʌmər/", "type": "word", "example": "It is hot in summer.", "exampleMeaning": "夏天很热。" },
+    { "word": "autumn", "meaning": "秋天", "ipa": "/ˈɔːtəm/", "type": "word", "example": "Leaves fall in autumn.", "exampleMeaning": "秋天树叶飘落。" },
+    { "word": "winter", "meaning": "冬天", "ipa": "/ˈwɪntər/", "type": "word", "example": "It snows in winter.", "exampleMeaning": "冬天会下雪。" },
+    { "word": "morning", "meaning": "早晨", "ipa": "/ˈmɔːrnɪŋ/", "type": "word", "example": "I read books in the morning.", "exampleMeaning": "我早上读书。" },
+    { "word": "afternoon", "meaning": "下午", "ipa": "/ˌæftərˈnuːn/", "type": "word", "example": "We play sports in the afternoon.", "exampleMeaning": "我们下午做运动。" },
+    { "word": "evening", "meaning": "傍晚", "ipa": "/ˈiːvnɪŋ/", "type": "word", "example": "I watch TV in the evening.", "exampleMeaning": "我晚上看电视。" },
+    { "word": "breakfast", "meaning": "早餐", "ipa": "/ˈbrekfəst/", "type": "word", "example": "I have breakfast at seven.", "exampleMeaning": "我七点吃早餐。" },
+    { "word": "lunch", "meaning": "午餐", "ipa": "/lʌntʃ/", "type": "word", "example": "We have lunch at noon.", "exampleMeaning": "我们中午吃午餐。" },
+    { "word": "dinner", "meaning": "晚餐", "ipa": "/ˈdɪnər/", "type": "word", "example": "We have dinner together.", "exampleMeaning": "我们一起吃晚餐。" },
+    { "word": "library", "meaning": "图书馆", "ipa": "/ˈlaɪbreri/", "type": "word", "example": "I borrow books from the library.", "exampleMeaning": "我从图书馆借书。" },
+    { "word": "playground", "meaning": "操场", "ipa": "/ˈpleɪɡraʊnd/", "type": "word", "example": "Children play on the playground.", "exampleMeaning": "孩子们在操场上玩。" },
+    { "word": "classroom", "meaning": "教室", "ipa": "/ˈklæsruːm/", "type": "word", "example": "Our classroom is clean.", "exampleMeaning": "我们的教室很干净。" },
+    { "word": "teacher", "meaning": "老师", "ipa": "/ˈtiːtʃər/", "type": "word", "example": "My teacher is kind.", "exampleMeaning": "我的老师很和蔼。" },
+    { "word": "student", "meaning": "学生", "ipa": "/ˈstuːdnt/", "type": "word", "example": "She is a good student.", "exampleMeaning": "她是个好学生。" },
+    { "word": "doctor", "meaning": "医生", "ipa": "/ˈdɑːktər/", "type": "word", "example": "My father is a doctor.", "exampleMeaning": "我爸爸是医生。" },
+    { "word": "farmer", "meaning": "农民", "ipa": "/ˈfɑːrmər/", "type": "word", "example": "The farmer works hard.", "exampleMeaning": "农民工作很辛苦。" },
+    { "word": "beautiful", "meaning": "美丽的", "ipa": "/ˈbjuːtɪfl/", "type": "word", "example": "The flowers are beautiful.", "exampleMeaning": "这些花很美丽。" },
+    { "word": "favourite", "meaning": "最喜爱的", "ipa": "/ˈfeɪvərɪt/", "type": "word", "example": "Red is my favourite colour.", "exampleMeaning": "红色是我最喜爱的颜色。" },
+    { "word": "get up", "meaning": "起床", "ipa": "/ɡet ʌp/", "type": "phrase", "example": "I get up at seven.", "exampleMeaning": "我七点起床。" },
+    { "word": "go to school", "meaning": "去上学", "ipa": "/ɡoʊ tuː skuːl/", "type": "phrase", "example": "I go to school by bus.", "exampleMeaning": "我坐公交车去上学。" },
+    { "word": "go home", "meaning": "回家", "ipa": "/ɡoʊ hoʊm/", "type": "phrase", "example": "I go home at five.", "exampleMeaning": "我五点回家。" },
+    { "word": "watch TV", "meaning": "看电视", "ipa": "/wɑːtʃ ˌtiːˈviː/", "type": "phrase", "example": "I watch TV after dinner.", "exampleMeaning": "我晚饭后看电视。" },
+    { "word": "a lot of", "meaning": "许多", "ipa": "/ə lɑːt əv/", "type": "phrase", "example": "There are a lot of books.", "exampleMeaning": "有许多书。" },
+    { "word": "What's the weather like today?", "meaning": "今天天气怎么样?", "ipa": "", "type": "sentence", "example": "", "exampleMeaning": "" },
+    { "word": "What time is it?", "meaning": "现在几点了?", "ipa": "", "type": "sentence", "example": "", "exampleMeaning": "" },
+    { "word": "What's your favourite season?", "meaning": "你最喜欢哪个季节?", "ipa": "", "type": "sentence", "example": "", "exampleMeaning": "" },
+    { "word": "I usually get up at six thirty.", "meaning": "我通常六点半起床。", "ipa": "", "type": "sentence", "example": "", "exampleMeaning": "" }
+  ]
+}

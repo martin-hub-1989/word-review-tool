@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "child": "弟弟",
+    "title": "一年级下册 示例词库",
+    "grade": 1
+  },
+  "items": [
+    { "word": "red", "meaning": "红色的", "ipa": "/red/", "type": "word", "example": "I like the red apple.", "exampleMeaning": "我喜欢这个红苹果。" },
+    { "word": "blue", "meaning": "蓝色的", "ipa": "/bluː/", "type": "word", "example": "The sky is blue.", "exampleMeaning": "天空是蓝色的。" },
+    { "word": "green", "meaning": "绿色的", "ipa": "/ɡriːn/", "type": "word", "example": "I have a green pen.", "exampleMeaning": "我有一支绿色的笔。" },
+    { "word": "yellow", "meaning": "黄色的", "ipa": "/ˈjeloʊ/", "type": "word", "example": "The sun is yellow.", "exampleMeaning": "太阳是黄色的。" },
+    { "word": "cat", "meaning": "猫", "ipa": "/kæt/", "type": "word", "example": "The cat is small.", "exampleMeaning": "这只猫很小。" },
+    { "word": "dog", "meaning": "狗", "ipa": "/dɔːɡ/", "type": "word", "example": "I have a dog.", "exampleMeaning": "我有一只狗。" },
+    { "word": "bird", "meaning": "鸟", "ipa": "/bɜːrd/", "type": "word", "example": "The bird can fly.", "exampleMeaning": "鸟会飞。" },
+    { "word": "fish", "meaning": "鱼", "ipa": "/fɪʃ/", "type": "word", "example": "I see a fish.", "exampleMeaning": "我看见一条鱼。" },
+    { "word": "one", "meaning": "一", "ipa": "/wʌn/", "type": "word", "example": "I have one apple.", "exampleMeaning": "我有一个苹果。" },
+    { "word": "two", "meaning": "二", "ipa": "/tuː/", "type": "word", "example": "I see two cats.", "exampleMeaning": "我看见两只猫。" },
+    { "word": "three", "meaning": "三", "ipa": "/θriː/", "type": "word", "example": "I have three pens.", "exampleMeaning": "我有三支笔。" },
+    { "word": "four", "meaning": "四", "ipa": "/fɔːr/", "type": "word", "example": "There are four dogs.", "exampleMeaning": "有四只狗。" },
+    { "word": "five", "meaning": "五", "ipa": "/faɪv/", "type": "word", "example": "I am five.", "exampleMeaning": "我五岁了。" },
+    { "word": "hand", "meaning": "手", "ipa": "/hænd/", "type": "word", "example": "Wash your hand.", "exampleMeaning": "洗洗你的手。" },
+    { "word": "eye", "meaning": "眼睛", "ipa": "/aɪ/", "type": "word", "example": "Close your eye.", "exampleMeaning": "闭上你的眼睛。" },
+    { "word": "ear", "meaning": "耳朵", "ipa": "/ɪr/", "type": "word", "example": "I have two ears.", "exampleMeaning": "我有两只耳朵。" },
+    { "word": "nose", "meaning": "鼻子", "ipa": "/noʊz/", "type": "word", "example": "Touch your nose.", "exampleMeaning": "摸摸你的鼻子。" },
+    { "word": "apple", "meaning": "苹果", "ipa": "/ˈæpl/", "type": "word", "example": "I eat an apple.", "exampleMeaning": "我吃一个苹果。" },
+    { "word": "egg", "meaning": "鸡蛋", "ipa": "/eɡ/", "type": "word", "example": "I like eggs.", "exampleMeaning": "我喜欢鸡蛋。" },
+    { "word": "milk", "meaning": "牛奶", "ipa": "/mɪlk/", "type": "word", "example": "I drink milk.", "exampleMeaning": "我喝牛奶。" },
+    { "word": "cake", "meaning": "蛋糕", "ipa": "/keɪk/", "type": "word", "example": "The cake is big.", "exampleMeaning": "这个蛋糕很大。" },
+    { "word": "book", "meaning": "书", "ipa": "/bʊk/", "type": "word", "example": "This is my book.", "exampleMeaning": "这是我的书。" },
+    { "word": "pen", "meaning": "钢笔", "ipa": "/pen/", "type": "word", "example": "I have a pen.", "exampleMeaning": "我有一支笔。" },
+    { "word": "bag", "meaning": "书包", "ipa": "/bæɡ/", "type": "word", "example": "My bag is red.", "exampleMeaning": "我的书包是红色的。" },
+    { "word": "Hello!", "meaning": "你好!", "ipa": "", "type": "sentence", "example": "", "exampleMeaning": "" },
+    { "word": "How are you?", "meaning": "你好吗?", "ipa": "", "type": "sentence", "example": "", "exampleMeaning": "" },
+    { "word": "Thank you.", "meaning": "谢谢你。", "ipa": "", "type": "sentence", "example": "", "exampleMeaning": "" },
+    { "word": "I like apples.", "meaning": "我喜欢苹果。", "ipa": "", "type": "sentence", "example": "", "exampleMeaning": "" },
+    { "word": "stand up", "meaning": "起立", "ipa": "/stænd ʌp/", "type": "phrase", "example": "Stand up, please.", "exampleMeaning": "请起立。" },
+    { "word": "sit down", "meaning": "坐下", "ipa": "/sɪt daʊn/", "type": "phrase", "example": "Sit down, please.", "exampleMeaning": "请坐下。" }
+  ]
+}

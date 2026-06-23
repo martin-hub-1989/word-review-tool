@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>单词闯关乐园 🎮</title>
+<style>
+  :root {
+    --bg1:#fff7e6; --bg2:#ffe3ec; --card:#ffffff;
+    --primary:#ff6b6b; --primary-d:#e8553f;
+    --blue:#4dabf7; --green:#51cf66; --yellow:#ffd43b;
+    --purple:#9775fa; --orange:#ff922b;
+    --ink:#3a2f4a; --muted:#8a7f95;
+    --shadow:0 8px 24px rgba(0,0,0,.12);
+    --radius:20px;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; padding:0; height:100%; }
+  body {
+    font-family:"Comic Sans MS","Segoe UI Rounded","PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(135deg,var(--bg1),var(--bg2));
+    color:var(--ink); min-height:100vh; overflow-x:hidden;
+  }
+  #app { max-width:920px; margin:0 auto; padding:16px; }
+  .screen { display:none; animation:pop .35s ease; }
+  .screen.active { display:block; }
+  @keyframes pop { from{opacity:0; transform:scale(.96);} to{opacity:1; transform:scale(1);} }
+
+  h1 { text-align:center; font-size:clamp(28px,6vw,44px); margin:10px 0 4px;
+       color:var(--primary); text-shadow:2px 2px 0 #fff, 4px 4px 0 rgba(0,0,0,.06); }
+  .subtitle { text-align:center; color:var(--muted); margin:0 0 18px; font-size:15px; }
+
+  .card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+          padding:22px; margin:14px 0; }
+
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
+         border:none; border-radius:16px; padding:14px 22px; font-size:18px; font-weight:700;
+         cursor:pointer; color:#fff; background:var(--primary); box-shadow:0 5px 0 var(--primary-d);
+         transition:transform .08s, box-shadow .08s; font-family:inherit; }
+  .btn:active { transform:translateY(4px); box-shadow:0 1px 0 var(--primary-d); }
+  .btn.blue{background:var(--blue);box-shadow:0 5px 0 #2f8fd6;}
+  .btn.green{background:var(--green);box-shadow:0 5px 0 #2f9e44;}
+  .btn.purple{background:var(--purple);box-shadow:0 5px 0 #7048e8;}
+  .btn.orange{background:var(--orange);box-shadow:0 5px 0 #e8590c;}
+  .btn.gray{background:#adb5bd;box-shadow:0 5px 0 #868e96;}
+  .btn.small{padding:9px 14px;font-size:15px;border-radius:12px;}
+  .btn.big{font-size:22px;padding:18px 28px;}
+  .btn-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;}
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
+  .tile { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+          padding:20px 16px; text-align:center; cursor:pointer; border:3px solid transparent;
+          transition:transform .1s, border-color .1s; }
+  .tile:hover{transform:translateY(-4px);}
+  .tile.sel{border-color:var(--primary);}
+  .tile .emoji{font-size:40px;display:block;margin-bottom:8px;}
+  .tile .t-title{font-weight:800;font-size:17px;}
+  .tile .t-sub{color:var(--muted);font-size:13px;margin-top:4px;}
+  .badge{display:inline-block;background:var(--yellow);color:#7a5a00;border-radius:999px;
+         padding:2px 10px;font-size:12px;font-weight:800;margin-top:6px;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .crumbs{color:var(--muted);font-size:14px;font-weight:700;}
+
+  /* gameplay */
+  .progressbar{height:14px;background:#eee;border-radius:999px;overflow:hidden;margin:6px 0 14px;}
+  .progressbar > div{height:100%;background:linear-gradient(90deg,var(--green),var(--yellow));width:0;transition:width .3s;}
+  .qmeta{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);font-weight:700;margin-bottom:6px;}
+  .prompt-cn{font-size:clamp(22px,5vw,30px);font-weight:900;text-align:center;margin:8px 0;}
+  .prompt-ipa{text-align:center;color:var(--blue);font-size:18px;margin:2px 0;}
+  .speakbtn{display:block;margin:6px auto;background:var(--yellow);color:#7a5a00;box-shadow:0 5px 0 #e0b100;}
+
+  .slots{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:18px 0;}
+  .slot{width:46px;height:56px;border-radius:12px;background:#f1f3f5;display:flex;align-items:center;
+        justify-content:center;font-size:28px;font-weight:900;border:3px solid #dee2e6;text-transform:lowercase;}
+  .slot.fixed{background:#e7f5ff;border-color:#a5d8ff;color:var(--blue);}
+  .slot.filled{background:#fff;border-color:var(--green);}
+  .slot.cursor{border-color:var(--primary);box-shadow:0 0 0 3px rgba(255,107,107,.25);}
+  .slot.space{background:transparent;border:none;width:18px;}
+
+  .sentence{font-size:clamp(20px,4.5vw,28px);font-weight:800;text-align:center;line-height:1.7;margin:14px 0;}
+  .sentence .blank{display:inline-block;min-width:90px;border-bottom:4px dashed var(--primary);
+                   color:var(--primary);padding:0 6px;}
+
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0;}
+  .option{background:#fff;border:3px solid #dee2e6;border-radius:16px;padding:16px;font-size:20px;
+          font-weight:800;cursor:pointer;text-align:center;transition:transform .08s;display:flex;
+          align-items:center;gap:10px;justify-content:center;}
+  .option:hover{transform:translateY(-3px);}
+  .option .num{background:var(--blue);color:#fff;border-radius:10px;width:30px;height:30px;
+               display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex:none;}
+  .option.right{border-color:var(--green);background:#ebfbee;}
+  .option.wrong{border-color:var(--primary);background:#fff0f0;}
+
+  .feedback{text-align:center;font-size:24px;font-weight:900;min-height:30px;margin:6px 0;}
+  .feedback.ok{color:var(--green);} .feedback.no{color:var(--primary);}
+
+  /* virtual keyboard */
+  .keyboard{margin:16px auto 0;max-width:720px;}
+  .krow{display:flex;justify-content:center;gap:6px;margin-bottom:6px;}
+  .key{flex:1;max-width:54px;height:50px;border-radius:10px;background:#fff;box-shadow:0 3px 0 #ced4da;
+       display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--ink);
+       text-transform:uppercase;user-select:none;cursor:pointer;}
+  .key.wide{max-width:120px;flex:2;}
+  .key.hl{background:var(--yellow);box-shadow:0 3px 0 #e0b100;transform:scale(1.05);}
+  .key.good{background:var(--green);color:#fff;box-shadow:0 3px 0 #2f9e44;}
+  .key.bad{background:var(--primary);color:#fff;box-shadow:0 3px 0 var(--primary-d);animation:shake .3s;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+
+  .result-emoji{font-size:80px;text-align:center;}
+  .stars{font-size:46px;text-align:center;letter-spacing:6px;}
+  .stat-line{font-size:20px;text-align:center;font-weight:700;margin:6px 0;}
+
+  .hint{color:var(--muted);font-size:14px;text-align:center;margin-top:10px;}
+  .hidden-input{position:absolute;opacity:0;height:0;width:0;}
+  select,input[type=text]{font-family:inherit;font-size:16px;padding:10px;border-radius:12px;
+          border:2px solid #dee2e6;background:#fff;}
+  label{font-weight:700;}
+  .filebtn{position:relative;overflow:hidden;}
+  .filebtn input{position:absolute;left:0;top:0;opacity:0;width:100%;height:100%;cursor:pointer;}
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--ink);color:#fff;
+         padding:12px 22px;border-radius:14px;font-weight:700;opacity:0;transition:opacity .3s;z-index:50;}
+  .toast.show{opacity:.95;}
+  .empty{text-align:center;color:var(--muted);padding:30px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <section id="screen-home" class="screen active">
+    <h1>🎮 单词闯关乐园</h1>
+    <p class="subtitle">复习单词 · 练习句子 · 熟悉键盘</p>
+
+    <div class="card">
+      <div class="topbar">
+        <strong>📚 选择词库</strong>
+        <span>
+          <button class="btn green small filebtn">➕ 加载词库<input type="file" id="loadBank" accept=".json" multiple></button>
+        </span>
+      </div>
+      <div id="bankList" class="grid"></div>
+      <p class="hint">把 Claude 生成的词库 JSON 文件加载进来。已加载的词库会记住,下次自动出现。</p>
+    </div>
+
+    <div class="card">
+      <div class="btn-row">
+        <button class="btn blue small filebtn">📥 导入备份<input type="file" id="importBackup" accept=".json"></button>
+        <button class="btn purple small" id="exportBackup">📤 导出备份</button>
+        <button class="btn gray small" id="manageBanks">🗑️ 管理词库</button>
+      </div>
+      <p class="hint">进度和错题本存在本机浏览器。换设备时用"导出备份/导入备份"迁移。</p>
+    </div>
+  </section>
+
+  <!-- MODE SELECT -->
+  <section id="screen-mode" class="screen">
+    <div class="topbar">
+      <button class="btn gray small" data-go="home">← 返回</button>
+      <span class="crumbs" id="modeCrumbs"></span>
+    </div>
+    <h1 style="font-size:30px">选择闯关模式</h1>
+    <div class="grid" id="modeGrid"></div>
+
+    <div class="card" id="wrongbankCard">
+      <div class="topbar"><strong>📒 错题本</strong><span id="wrongCount" class="badge">0 题</span></div>
+      <p class="hint">第一次没做对、或答得太慢的题会进这里。连续答对 3 次就毕业!</p>
+      <button class="btn orange" id="practiceWrong">📒 练习错题本</button>
+    </div>
+
+    <div class="card">
+      <label>每关题数:</label>
+      <select id="qcount">
+        <option value="5">5 题</option>
+        <option value="10" selected>10 题</option>
+        <option value="15">15 题</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="screen-game" class="screen">
+    <div class="topbar">
+      <button class="btn gray small" data-go="mode">← 退出</button>
+      <span class="crumbs" id="gameCrumbs"></span>
+    </div>
+    <div class="qmeta"><span id="qProgress">第 1 / 10 题</span><span id="qScore">⭐ 0</span></div>
+    <div class="progressbar"><div id="qbar"></div></div>
+
+    <div class="card" id="gameCard"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="keyboard" id="keyboard"></div>
+    <input class="hidden-input" id="hiddenInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  </section>
+
+  <!-- RESULT -->
+  <section id="screen-result" class="screen">
+    <h1 style="font-size:30px">闯关结果</h1>
+    <div class="card">
+      <div class="result-emoji" id="resultEmoji">🎉</div>
+      <div class="stars" id="resultStars">⭐⭐⭐</div>
+      <div class="stat-line" id="resultScore"></div>
+      <div class="stat-line" id="resultTime"></div>
+      <div class="stat-line" id="resultWrong"></div>
+      <div class="btn-row" style="margin-top:18px">
+        <button class="btn green" id="againBtn">🔁 再来一关</button>
+        <button class="btn blue" data-go="mode">📋 换模式</button>
+        <button class="btn gray" data-go="home">🏠 回首页</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   单词闯关乐园 — 全部逻辑(自包含,无外部依赖)
+   ========================================================= */
+
+const LS_KEY = "wordReviewTool.v1";
+
+/* ---------- 持久化数据 ---------- */
+// store = { banks:{id:{meta,items}}, progress:{bankId:{stars}}, wrong:{bankId:[{key,streak}]},
+//           timing:{mode:{n,mean,m2}} }   // m2 用于在线方差(Welford)
+let store = loadStore();
+
+function loadStore(){
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw) return JSON.parse(raw);
+  } catch(e){}
+  return { banks:{}, progress:{}, wrong:{}, timing:{} };
+}
+function saveStore(){ localStorage.setItem(LS_KEY, JSON.stringify(store)); }
+
+/* ---------- 工具函数 ---------- */
+function $(id){ return document.getElementById(id); }
+function show(screen){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $("screen-"+screen).classList.add("active");
+  window.scrollTo(0,0);
+}
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1800);
+}
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function itemKey(bankId,it){ return bankId+"::"+it.word; }
+
+/* ---------- 发音(Web Speech API) ---------- */
+function speak(text){
+  if(!text || !window.speechSynthesis) return;
+  try {
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang="en-US"; u.rate=0.85;
+    speechSynthesis.speak(u);
+  } catch(e){}
+}
+
+/* =========================================================
+   词库加载与首页
+   ========================================================= */
+function bankId(meta){ return (meta.child||"?")+"｜"+(meta.title||"未命名"); }
+
+function addBank(data){
+  if(!data || !data.meta || !Array.isArray(data.items)){ toast("文件格式不对 😕"); return; }
+  const id=bankId(data.meta);
+  store.banks[id]={ meta:data.meta, items:data.items };
+  if(!store.progress[id]) store.progress[id]={stars:0};
+  if(!store.wrong[id]) store.wrong[id]=[];
+  saveStore();
+  renderBanks();
+  toast("已加载:"+data.meta.title);
+}
+
+function renderBanks(){
+  const list=$("bankList"); list.innerHTML="";
+  const ids=Object.keys(store.banks);
+  if(ids.length===0){ list.innerHTML='<p class="empty">还没有词库,点右上角"➕ 加载词库"添加吧!</p>'; return; }
+  // 按孩子分组
+  const byChild={};
+  ids.forEach(id=>{ const c=store.banks[id].meta.child||"未分组"; (byChild[c]=byChild[c]||[]).push(id); });
+  Object.keys(byChild).forEach(child=>{
+    const head=document.createElement("div");
+    head.style.cssText="grid-column:1/-1;font-weight:900;color:var(--muted);margin-top:4px;";
+    head.textContent="👦 "+child;
+    list.appendChild(head);
+    byChild[child].forEach(id=>{
+      const b=store.banks[id]; const stars=(store.progress[id]||{}).stars||0;
+      const wrong=(store.wrong[id]||[]).length;
+      const tile=document.createElement("div");
+      tile.className="tile";
+      tile.innerHTML=`<span class="emoji">📗</span>
+        <div class="t-title">${b.meta.title}</div>
+        <div class="t-sub">${b.items.length} 个条目 · ${b.meta.grade?('年级 '+b.meta.grade):''}</div>
+        <div class="badge">⭐ ${stars}${wrong?(' · 📒 '+wrong):''}</div>`;
+      tile.onclick=()=>enterBank(id);
+      list.appendChild(tile);
+    });
+  });
+}
+
+/* =========================================================
+   模式选择
+   ========================================================= */
+const MODES=[
+  {id:"spell1", emoji:"✏️", title:"拼写闯关 1", sub:"补全缺字母的单词"},
+  {id:"spell2", emoji:"⌨️", title:"拼写闯关 2", sub:"看释义默写整词"},
+  {id:"mean1",  emoji:"🤔", title:"意思闯关 1", sub:"看单词选意思"},
+  {id:"mean2",  emoji:"🔤", title:"意思闯关 2", sub:"看意思选单词"},
+  {id:"cloze",  emoji:"📝", title:"完形填空",   sub:"句子里敲出单词"},
+];
+
+let curBankId=null, curWrongMode=false;
+
+function enterBank(id){
+  curBankId=id; curWrongMode=false;
+  const b=store.banks[id];
+  $("modeCrumbs").textContent=(b.meta.child||"")+" · "+b.meta.title;
+  const grid=$("modeGrid"); grid.innerHTML="";
+  MODES.forEach(m=>{
+    const tile=document.createElement("div");
+    tile.className="tile";
+    tile.innerHTML=`<span class="emoji">${m.emoji}</span><div class="t-title">${m.title}</div><div class="t-sub">${m.sub}</div>`;
+    tile.onclick=()=>startGame(m.id,false);
+    grid.appendChild(tile);
+  });
+  $("wrongCount").textContent=(store.wrong[id]||[]).length+" 题";
+  show("mode");
+}
+
+/* =========================================================
+   出题:根据模式与年级筛选条目
+   ========================================================= */
+function eligibleItems(mode){
+  const items=store.banks[curBankId].items;
+  if(mode==="spell1"||mode==="spell2"){
+    // 单词为主;短语在 spell1 也可
+    return items.filter(it=> it.type==="word" || (mode==="spell1"&&it.type==="phrase"&&!it.word.includes(" ")));
+  }
+  if(mode==="mean1"||mode==="mean2"){
+    return items.filter(it=> (it.type==="word"||it.type==="phrase") && it.meaning);
+  }
+  if(mode==="cloze"){
+    // 有例句的单词/短语,或本身是句子(挖一个词)
+    return items.filter(it=> (it.example && it.example.split(" ").length>=2) );
+  }
+  return items;
+}
+
+/* =========================================================
+   游戏主循环
+   ========================================================= */
+let game=null; // {mode, queue:[], idx, correct, startTs, qStartTs, fromWrong}
+
+function startGame(mode, fromWrong){
+  const qcount=parseInt($("qcount").value,10);
+  let pool;
+  if(fromWrong){
+    const keys=(store.wrong[curBankId]||[]).map(w=>w.key);
+    pool=store.banks[curBankId].items.filter(it=>keys.includes(itemKey(curBankId,it)));
+    pool=pool.filter(it=>isItemUsable(mode,it));
+    if(pool.length===0){ toast("错题本里没有适合这个模式的题 🙂"); return; }
+  } else {
+    pool=eligibleItems(mode);
+    if(pool.length===0){ toast("这个词库没有适合该模式的内容 🙂"); return; }
+  }
+  const n=Math.min(qcount, Math.max(pool.length, 3));
+  // 题目数量不足时允许重复
+  let queue=shuffle(pool);
+  while(queue.length<n) queue=queue.concat(shuffle(pool));
+  queue=queue.slice(0,n);
+
+  game={ mode, queue, idx:0, correct:0, fromWrong,
+         startTs:Date.now(), qStartTs:0, attempted:false };
+  const b=store.banks[curBankId];
+  $("gameCrumbs").textContent=(fromWrong?"📒 错题练习 · ":"")+modeTitle(mode);
+  show("game");
+  nextQuestion();
+}
+function modeTitle(m){ return (MODES.find(x=>x.id===m)||{}).title||m; }
+
+function nextQuestion(){
+  if(game.idx>=game.queue.length){ finishGame(); return; }
+  const total=game.queue.length;
+  $("qProgress").textContent=`第 ${game.idx+1} / ${total} 题`;
+  $("qScore").textContent="⭐ "+game.correct;
+  $("qbar").style.width=(game.idx/total*100)+"%";
+  $("feedback").textContent=""; $("feedback").className="feedback";
+  game.attempted=false;
+  game.qStartTs=Date.now();
+  const it=game.queue[game.idx];
+  const render={spell1:renderSpell1,spell2:renderSpell2,mean1:renderMean1,mean2:renderMean2,cloze:renderCloze}[game.mode];
+  render(it);
+}
+
+/* 判定一道题结束:记录正误、超时、错题本、统计 */
+function judge(it, isRight){
+  if(game.attempted) return; // 防重复
+  game.attempted=true;
+  const elapsed=(Date.now()-game.qStartTs)/1000;
+  const key=itemKey(curBankId,it);
+
+  let slow=false;
+  if(isRight){
+    slow=recordTimingAndCheckSlow(game.mode, elapsed); // 仅答对才计入耗时统计
+  }
+
+  if(isRight && !slow){
+    game.correct++;
+    // 错题本中:连续答对 +1,够 3 次毕业
+    if(game.fromWrong) bumpWrongStreak(key, true);
+    else if(isInWrong(key)) bumpWrongStreak(key, true);
+    flash(true, slow);
+  } else {
+    // 答错,或答对但太慢 -> 进错题本
+    addToWrong(key);
+    if(game.fromWrong) bumpWrongStreak(key, false); // 错题练习里做错,连击清零
+    flash(false, slow && isRight);
+  }
+  saveStore();
+}
+
+function flash(ok, slowButRight){
+  const fb=$("feedback");
+  if(ok){ fb.textContent=pick(["太棒了! 🎉","真厉害! ⭐","答对啦! 👍","完美! 💯"]); fb.className="feedback ok"; }
+  else if(slowButRight){ fb.textContent="对了,但有点慢,记进错题本多练练 ⏱️"; fb.className="feedback no"; }
+  else { fb.textContent="没关系,记下来下次就会啦 💪"; fb.className="feedback no"; }
+  setTimeout(()=>{ game.idx++; nextQuestion(); }, ok?900:1700);
+}
+
+/* ---------- 耗时统计(Welford 在线均值/方差,按题型) ---------- */
+function recordTimingAndCheckSlow(mode, x){
+  const t=store.timing[mode] || {n:0,mean:0,m2:0};
+  let slow=false;
+  if(t.n>=10){
+    const sd=Math.sqrt(t.m2/(t.n-1));
+    if(x > t.mean + sd) slow=true; // 超过 μ+1σ
+  }
+  // 更新统计
+  t.n++; const d=x-t.mean; t.mean+=d/t.n; const d2=x-t.mean; t.m2+=d*d2;
+  store.timing[mode]=t;
+  return slow;
+}
+
+/* ---------- 错题本 ---------- */
+function getWrong(){ return store.wrong[curBankId]=store.wrong[curBankId]||[]; }
+function isInWrong(key){ return getWrong().some(w=>w.key===key); }
+function addToWrong(key){
+  const w=getWrong();
+  if(!w.some(x=>x.key===key)) w.push({key, streak:0});
+}
+function bumpWrongStreak(key, correct){
+  const w=getWrong(); const e=w.find(x=>x.key===key); if(!e) return;
+  if(correct){ e.streak=(e.streak||0)+1; if(e.streak>=3){ store.wrong[curBankId]=w.filter(x=>x.key!==key); } }
+  else { e.streak=0; }
+}
+
+/* =========================================================
+   虚拟键盘
+   ========================================================= */
+const KB_ROWS=[
+  "qwertyuiop".split(""),
+  "asdfghjkl".split(""),
+  "zxcvbnm".split(""),
+];
+function buildKeyboard(showLetters){
+  const kb=$("keyboard"); kb.innerHTML="";
+  if(!showLetters){ kb.style.display="none"; return; }
+  kb.style.display="block";
+  KB_ROWS.forEach(row=>{
+    const r=document.createElement("div"); r.className="krow";
+    row.forEach(ch=>{
+      const k=document.createElement("div"); k.className="key"; k.dataset.k=ch; k.textContent=ch;
+      k.onclick=()=>handleLetter(ch);
+      r.appendChild(k);
+    });
+    kb.appendChild(r);
+  });
+  // 退格行
+  const r=document.createElement("div"); r.className="krow";
+  const bk=document.createElement("div"); bk.className="key wide"; bk.dataset.k="Backspace"; bk.textContent="⌫ 删除";
+  bk.onclick=()=>handleBackspace();
+  r.appendChild(bk); kb.appendChild(r);
+}
+function highlightKey(ch){
+  document.querySelectorAll(".key").forEach(k=>k.classList.remove("hl"));
+  if(!ch) return;
+  const k=document.querySelector('.key[data-k="'+ch.toLowerCase()+'"]');
+  if(k) k.classList.add("hl");
+}
+function keyFeedback(ch, good){
+  const k=document.querySelector('.key[data-k="'+ch.toLowerCase()+'"]');
+  if(!k) return;
+  k.classList.add(good?"good":"bad");
+  setTimeout(()=>k.classList.remove(good?"good":"bad"),300);
+}
+
+/* =========================================================
+   模式 ①  拼写闯关 1 — 补全缺字母
+   ========================================================= */
+let spell=null; // {answer, slots:[{ch,fixed,filled}], cursor}
+
+function renderSpell1(it){
+  const word=it.word.toLowerCase();
+  const grade=store.banks[curBankId].meta.grade||4;
+  const letters=word.split("");
+  const idxLetters=letters.map((c,i)=>({c,i})).filter(o=>/[a-z]/.test(o.c));
+  // 隐藏比例:一年级约 1/3 且偏后,四年级过半随机
+  let hideCount, hideSet=new Set();
+  if(grade<=2){
+    hideCount=Math.max(1, Math.round(idxLetters.length/3));
+    const tail=idxLetters.slice(Math.ceil(idxLetters.length/2)); // 后半段
+    shuffle(tail).slice(0,hideCount).forEach(o=>hideSet.add(o.i));
+  } else {
+    hideCount=Math.max(2, Math.ceil(idxLetters.length*0.6));
+    shuffle(idxLetters).slice(0,hideCount).forEach(o=>hideSet.add(o.i));
+  }
+  const slots=letters.map((c,i)=>{
+    if(c===" ") return {ch:" ", space:true};
+    if(hideSet.has(i)) return {ch:c, fixed:false, filled:false, val:""};
+    return {ch:c, fixed:true};
+  });
+  spell={answer:word, slots, cursor:firstBlank(slots)};
+  drawSpell(it, true);
+}
+
+/* 模式 ② 拼写闯关 2 — 全词默写(全部空格) */
+function renderSpell2(it){
+  const word=it.word.toLowerCase();
+  const grade=store.banks[curBankId].meta.grade||4;
+  const slots=word.split("").map(c=> c===" "?{ch:" ",space:true}:{ch:c,fixed:false,filled:false,val:""});
+  spell={answer:word, slots, cursor:firstBlank(slots), allowFirstHint:grade<=2};
+  drawSpell(it, false, spell.allowFirstHint);
+}
+
+function firstBlank(slots){ return slots.findIndex(s=>!s.fixed && !s.space); }
+
+function drawSpell(it, isSpell1, allowHint){
+  const card=$("gameCard");
+  card.innerHTML=`
+    <div class="prompt-cn">${it.meaning}</div>
+    ${it.ipa?`<div class="prompt-ipa">${it.ipa}</div>`:""}
+    <button class="btn small speakbtn" id="spk">🔊 听发音</button>
+    <div class="slots" id="slots"></div>
+    ${it.type==="phrase"?'<p class="hint">这是个词组,注意空格</p>':''}
+    ${allowHint?'<div class="btn-row"><button class="btn gray small" id="hintBtn">💡 提示首字母</button></div>':''}
+  `;
+  $("spk").onclick=()=>speak(it.word);
+  if(allowHint) $("hintBtn").onclick=()=>{
+    const fi=spell.slots.findIndex(s=>!s.fixed&&!s.space&&!s.val);
+    if(fi>=0){ spell.slots[fi].val=spell.answer[fi]; spell.slots[fi].filled=true; advanceCursor(); drawSlots(); checkSpellDone(it); }
+  };
+  drawSlots();
+  buildKeyboard(true);
+  focusHidden();
+  speak(it.word);
+}
+
+function drawSlots(){
+  const wrap=$("slots"); wrap.innerHTML="";
+  spell.slots.forEach((s,i)=>{
+    const d=document.createElement("div");
+    if(s.space){ d.className="slot space"; wrap.appendChild(d); return; }
+    d.className="slot"+(s.fixed?" fixed":"")+(s.filled?" filled":"")+(i===spell.cursor?" cursor":"");
+    d.textContent = s.fixed? s.ch : (s.val||"");
+    wrap.appendChild(d);
+  });
+  // 高亮下一个该敲的键
+  const cur=spell.slots[spell.cursor];
+  highlightKey(cur?cur.ch:null);
+}
+
+function advanceCursor(){
+  let i=spell.cursor+1;
+  while(i<spell.slots.length && (spell.slots[i].fixed||spell.slots[i].space)) i++;
+  spell.cursor = (i<spell.slots.length)? i : -1;
+}
+
+function handleLetter(ch){
+  if(!spell || !game || game.attempted) return;
+  if(spell.cursor<0) return;
+  const cur=spell.slots[spell.cursor];
+  if(!cur || cur.fixed || cur.space) return;
+  const good = ch.toLowerCase()===cur.ch.toLowerCase();
+  keyFeedback(ch, good);
+  cur.val=ch.toLowerCase(); cur.filled=true;
+  advanceCursor();
+  drawSlots();
+  if(game.mode==="cloze") syncBlank();
+  checkSpellDone(game.queue[game.idx]);
+}
+function handleBackspace(){
+  if(!spell || game.attempted) return;
+  // 回退到上一个可填格
+  let i = spell.cursor<0? spell.slots.length-1 : spell.cursor-1;
+  while(i>=0 && (spell.slots[i].fixed||spell.slots[i].space)) i--;
+  if(i>=0){ spell.slots[i].val=""; spell.slots[i].filled=false; spell.cursor=i; drawSlots(); if(game.mode==="cloze") syncBlank(); }
+}
+function checkSpellDone(it){
+  const allFilled=spell.slots.every(s=>s.fixed||s.space||s.val);
+  if(!allFilled) return;
+  const typed=spell.slots.map(s=> s.space?" ":(s.fixed?s.ch:s.val)).join("");
+  judge(it, typed===spell.answer);
+}
+
+/* =========================================================
+   模式 ③ 看词选意思 / ④ 看意思选词
+   ========================================================= */
+function buildOptions(it, key){
+  // key = "meaning" 或 "word"
+  const pool=store.banks[curBankId].items.filter(x=>x[key] && x[key]!==it[key] && (x.type==="word"||x.type==="phrase"));
+  const distract=shuffle(pool).slice(0,3).map(x=>x[key]);
+  const opts=shuffle([it[key], ...distract]);
+  // 不足 4 个也可
+  return opts;
+}
+function renderMean1(it){ // 看英文,选中文
+  const opts=buildOptions(it,"meaning");
+  drawChoice(it, it.word, it.ipa, opts, it.meaning, true);
+}
+function renderMean2(it){ // 看中文,选英文
+  const opts=buildOptions(it,"word");
+  drawChoice(it, it.meaning, "", opts, it.word, false);
+}
+function drawChoice(it, promptText, ipa, opts, answer, speakIt){
+  const card=$("gameCard");
+  card.innerHTML=`
+    <div class="prompt-cn">${promptText}</div>
+    ${ipa?`<div class="prompt-ipa">${ipa}</div>`:""}
+    ${speakIt?'<button class="btn small speakbtn" id="spk">🔊 听发音</button>':''}
+    <div class="options" id="opts"></div>
+    <p class="hint">用键盘按 1 / 2 / 3 / 4 选择</p>`;
+  if(speakIt){ $("spk").onclick=()=>speak(it.word); speak(it.word); }
+  const wrap=$("opts");
+  opts.forEach((o,i)=>{
+    const d=document.createElement("div"); d.className="option"; d.dataset.val=o;
+    d.innerHTML=`<span class="num">${i+1}</span><span>${o}</span>`;
+    d.onclick=()=>chooseOption(it, d, o===answer, answer);
+    wrap.appendChild(d);
+  });
+  buildKeyboard(false);
+  game._opts={answer, nodes:[...wrap.children]};
+}
+function chooseOption(it, node, isRight, answer){
+  if(game.attempted) return;
+  node.classList.add(isRight?"right":"wrong");
+  if(!isRight){ // 标出正确答案
+    game._opts.nodes.forEach(n=>{ if(n.dataset.val===answer) n.classList.add("right"); });
+  }
+  judge(it, isRight);
+}
+
+/* =========================================================
+   模式 ⑤ 完形填空 — 句中敲词
+   ========================================================= */
+function renderCloze(it){
+  // 用例句;挖掉目标词(it.word 的核心)
+  const sentence=it.example;
+  const target=it.word.toLowerCase();
+  // 找到句中目标词的位置(忽略大小写,整词)
+  const re=new RegExp("\\b"+escapeReg(target)+"\\b","i");
+  let display=sentence, found=re.test(sentence);
+  let answer=target;
+  if(!found){
+    // 例句里没有原词时,退化为默写该词(挖整词)
+    display=sentence; answer=target;
+  }
+  spell={answer, slots:answer.split("").map(c=> c===" "?{ch:" ",space:true}:{ch:c,fixed:false,filled:false,val:""}),
+         cursor:0};
+  spell.cursor=firstBlank(spell.slots);
+
+  const card=$("gameCard");
+  const blanked = found? sentence.replace(re,'<span class="blank" id="blankSpot">____</span>')
+                       : sentence+' <span class="blank" id="blankSpot">____</span>';
+  card.innerHTML=`
+    <div class="sentence">${blanked}</div>
+    ${it.exampleMeaning?`<div class="prompt-cn" style="font-size:18px;color:var(--muted)">${it.exampleMeaning}</div>`:""}
+    <div class="prompt-ipa">提示:${it.meaning}${it.ipa?(' '+it.ipa):''}</div>
+    <button class="btn small speakbtn" id="spk">🔊 听整句</button>
+    <div class="slots" id="slots"></div>`;
+  $("spk").onclick=()=>speak(sentence);
+  drawClozeSlots();
+  buildKeyboard(true);
+  focusHidden();
+  speak(sentence);
+}
+function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function drawClozeSlots(){
+  drawSlots();
+  // 同步更新句中空格显示
+  const spot=$("blankSpot");
+  if(spot){ const typed=spell.slots.map(s=>s.space?" ":(s.val||"_")).join(""); spot.textContent=typed; }
+}
+// 复用 handleLetter / checkSpellDone:cloze 下输入会同步更新句中空格(见 handleLetter)
+
+/* =========================================================
+   键盘事件(物理键盘)
+   ========================================================= */
+function focusHidden(){ const h=$("hiddenInput"); if(h){ h.value=""; setTimeout(()=>h.focus(),50); } }
+
+document.addEventListener("keydown",(e)=>{
+  if(!$("screen-game").classList.contains("active")) return;
+  if(!game || game.attempted) return;
+  const k=e.key;
+  // 选择题:数字键
+  if((game.mode==="mean1"||game.mode==="mean2") && /^[1-4]$/.test(k)){
+    const idx=parseInt(k,10)-1; const nodes=game._opts?game._opts.nodes:[];
+    if(nodes[idx]){ e.preventDefault(); nodes[idx].click(); }
+    return;
+  }
+  // 拼写/完形:字母与退格
+  if(game.mode==="spell1"||game.mode==="spell2"||game.mode==="cloze"){
+    if(/^[a-zA-Z]$/.test(k)){ e.preventDefault(); handleLetter(k); }
+    else if(k==="Backspace"){ e.preventDefault(); handleBackspace(); }
+  }
+});
+function syncBlank(){ const spot=$("blankSpot"); if(spot&&spell){ const typed=spell.slots.map(s=>s.space?" ":(s.val||"_")).join(""); spot.textContent=typed; } }
+
+/* =========================================================
+   结算
+   ========================================================= */
+function finishGame(){
+  const total=game.queue.length;
+  const correct=game.correct;
+  const secs=Math.round((Date.now()-game.startTs)/1000);
+  const ratio=correct/total;
+  let stars = ratio>=1?3 : ratio>=0.7?2 : ratio>=0.4?1 : 0;
+  // 记录最佳星数
+  if(!game.fromWrong){
+    const p=store.progress[curBankId]||{stars:0};
+    p.stars=Math.max(p.stars||0, stars); store.progress[curBankId]=p; saveStore();
+  }
+  $("resultEmoji").textContent = stars===3?"🏆": stars>=1?"🎉":"💪";
+  $("resultStars").textContent = "⭐".repeat(stars)+"☆".repeat(3-stars);
+  $("resultScore").textContent = `答对 ${correct} / ${total} 题`;
+  $("resultTime").textContent = `用时 ${secs} 秒`;
+  const wrongNow=(store.wrong[curBankId]||[]).length;
+  $("resultWrong").textContent = `📒 错题本现有 ${wrongNow} 题`;
+  $("againBtn").onclick=()=>startGame(game.mode, game.fromWrong);
+  show("result");
+}
+
+/* =========================================================
+   备份导入导出 / 词库管理
+   ========================================================= */
+function exportBackup(){
+  const blob=new Blob([JSON.stringify(store,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="单词闯关备份.json";
+  a.click();
+  toast("已导出备份 📤");
+}
+function importBackup(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const data=JSON.parse(r.result);
+      if(data.banks){ store=data; saveStore(); renderBanks(); toast("备份已导入 ✅"); }
+      else toast("这不是备份文件 😕");
+    }catch(e){ toast("文件读取失败 😕"); }
+  };
+  r.readAsText(file);
+}
+function manageBanks(){
+  const ids=Object.keys(store.banks);
+  if(ids.length===0){ toast("还没有词库"); return; }
+  const name=prompt("输入要删除的词库完整名称(留空取消)。\n现有词库:\n"+ids.join("\n"));
+  if(name && store.banks[name]){
+    delete store.banks[name]; delete store.progress[name]; delete store.wrong[name];
+    saveStore(); renderBanks(); toast("已删除:"+name);
+  } else if(name){ toast("没找到这个词库"); }
+}
+
+/* =========================================================
+   事件绑定 & 启动
+   ========================================================= */
+$("loadBank").addEventListener("change",(e)=>{
+  [...e.target.files].forEach(f=>{
+    const r=new FileReader();
+    r.onload=()=>{ try{ addBank(JSON.parse(r.result)); }catch(err){ toast("解析失败:"+f.name); } };
+    r.readAsText(f);
+  });
+  e.target.value="";
+});
+$("importBackup").addEventListener("change",(e)=>{ if(e.target.files[0]) importBackup(e.target.files[0]); e.target.value=""; });
+$("exportBackup").onclick=exportBackup;
+$("manageBanks").onclick=manageBanks;
+$("practiceWrong").onclick=()=>{
+  // 错题练习:让用户在适用模式里随机抽,默认用拼写1;若错题不含可拼写项则用意思1
+  curWrongMode=true;
+  // 选一个有题的模式
+  const modesToTry=["spell1","spell2","cloze","mean1","mean2"];
+  for(const m of modesToTry){
+    const keys=(store.wrong[curBankId]||[]).map(w=>w.key);
+    const pool=store.banks[curBankId].items.filter(it=>keys.includes(itemKey(curBankId,it)) && isItemUsable(m,it));
+    if(pool.length>0){ startGame(m,true); return; }
+  }
+  toast("错题本是空的,继续闯关收集错题吧 🙂");
+};
+document.querySelectorAll("[data-go]").forEach(b=> b.onclick=()=>show(b.dataset.go));
+
+function isItemUsable(mode,it){
+  if(mode==="spell1"||mode==="spell2") return it.type==="word"||(it.type==="phrase"&&!it.word.includes(" "));
+  if(mode==="mean1"||mode==="mean2") return (it.type==="word"||it.type==="phrase")&&it.meaning;
+  if(mode==="cloze") return it.example && it.example.split(" ").length>=2;
+  return true;
+}
+
+// 启动:渲染已存词库
+renderBanks();
+
+// 调试钩子(便于自动化测试查看内部状态;对正常使用无副作用)
+window._wrt = { getGame:()=>game, getSpell:()=>spell, addBank, startGame, store:()=>store };
+</script>
+</body>
+</html>
