@@ -137,6 +137,11 @@
 
   .feedback{text-align:center;font-size:20px;font-weight:800;min-height:28px;margin:10px 0;letter-spacing:-.2px;}
   .feedback.ok{color:var(--green);} .feedback.no{color:var(--primary);}
+  .feedback.show-answer{display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .feedback.show-answer .ans-head{font-size:17px;}
+  .feedback.show-answer .ans-word{font-size:32px;font-weight:800;letter-spacing:1px;color:var(--teal);line-height:1.2;}
+  .feedback.show-answer .ans-word .ans-ipa{font-size:18px;font-style:italic;font-weight:600;margin-left:8px;color:var(--muted);}
+  .feedback.show-answer .ans-mean{font-size:18px;color:var(--ink);opacity:.85;}
 
   /* virtual keyboard */
   .keyboard{margin:22px auto 0;max-width:680px;padding:14px;background:var(--paper-2);
@@ -540,22 +545,30 @@ function judge(it, isRight){
     // 错题本中:连续答对 +1,够 3 次毕业
     if(game.fromWrong) bumpWrongStreak(bid, key, true);
     else if(isInWrong(bid, key)) bumpWrongStreak(bid, key, true);
-    flash(true, slow);
+    flash(true, slow, it);
   } else {
     // 答错,或答对但太慢 -> 进错题本
     addToWrong(bid, key);
     if(game.fromWrong) bumpWrongStreak(bid, key, false); // 错题练习里做错,连击清零
-    flash(false, slow && isRight);
+    flash(false, slow && isRight, it);
   }
   saveStore();
 }
 
-function flash(ok, slowButRight){
+function flash(ok, slowButRight, it){
   const fb=$("feedback");
-  if(ok){ fb.textContent=pick(["太棒了! 🎉","真厉害! ⭐","答对啦! 👍","完美! 💯"]); fb.className="feedback ok"; }
-  else if(slowButRight){ fb.textContent="对了,但有点慢,记进错题本多练练 ⏱️"; fb.className="feedback no"; }
-  else { fb.textContent="没关系,记下来下次就会啦 💪"; fb.className="feedback no"; }
-  setTimeout(()=>{ game.idx++; nextQuestion(); }, ok?900:1700);
+  if(ok){
+    fb.innerHTML=pick(["太棒了! 🎉","真厉害! ⭐","答对啦! 👍","完美! 💯"]);
+    fb.className="feedback ok";
+    setTimeout(()=>{ game.idx++; nextQuestion(); }, 900);
+  } else {
+    // 答错或超时答对:显示正确答案,停留 3 秒方便孩子记忆
+    const head = slowButRight ? "对了,但有点慢——记住它 ⏱️" : "没关系,正确答案是 💪";
+    const ipa = it.ipa ? ` <span class="ans-ipa">${it.ipa}</span>` : "";
+    fb.innerHTML=`<div class="ans-head">${head}</div><div class="ans-word">${it.word}${ipa}</div>${it.meaning?`<div class="ans-mean">${it.meaning}</div>`:""}`;
+    fb.className="feedback no show-answer";
+    setTimeout(()=>{ game.idx++; nextQuestion(); }, 3000);
+  }
 }
 
 /* ---------- 耗时统计(Welford 在线均值/方差,按题型) ---------- */
