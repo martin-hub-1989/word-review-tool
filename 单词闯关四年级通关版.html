@@ -237,6 +237,10 @@
         <option value="10" selected>10 题</option>
         <option value="15">15 题</option>
       </select>
+      <div class="btn-row" style="margin-top:12px;justify-content:flex-start;align-items:center;gap:10px">
+        <button class="btn gray small" id="hintToggle">💡 字母提示：关</button>
+        <span class="hint" style="margin:0">学习时打开看键位，闯关时关掉考记忆</span>
+      </div>
     </div>
   </section>
 
@@ -298,7 +302,7 @@ function loadStore(){
     const raw = localStorage.getItem(LS_KEY);
     if(raw) return JSON.parse(raw);
   } catch(e){}
-  return { banks:{}, progress:{}, wrong:{}, timing:{} };
+  return { banks:{}, progress:{}, wrong:{}, timing:{}, hintOn:false };
 }
 function saveStore(){ localStorage.setItem(LS_KEY, JSON.stringify(store)); }
 
@@ -423,6 +427,7 @@ function enterScope(sc){
   });
   $("wrongLabel").textContent = sc.kind==="total" ? "📒 总库错题本" : "📒 子库错题本";
   $("wrongCount").textContent=scopeWrong().length+" 题";
+  updateHintToggle();
   show("mode");
 }
 
@@ -608,8 +613,8 @@ function buildKeyboard(showLetters){
   r.appendChild(bk); kb.appendChild(r);
 }
 function highlightKey(ch){
-  document.querySelectorAll(".key").forEach(k=>k.classList.remove("hl"));
-  if(!ch) return;
+  document.querySelectorAll(".key").forEach(k=>k.classList.remove("hl")); // 先清掉所有高亮
+  if(!store.hintOn || !ch) return; // 闯关默认不提示下一个字母;学习时在模式页打开"字母提示"
   const k=document.querySelector('.key[data-k="'+ch.toLowerCase()+'"]');
   if(k) k.classList.add("hl");
 }
@@ -903,6 +908,17 @@ function manageBanks(){
 
 $("importBackup").addEventListener("change",(e)=>{ if(e.target.files[0]) importBackup(e.target.files[0]); e.target.value=""; });
 $("exportBackup").onclick=exportBackup;
+$("hintToggle").onclick=()=>{
+  store.hintOn=!store.hintOn;
+  saveStore();
+  updateHintToggle();
+};
+function updateHintToggle(){
+  const b=$("hintToggle");
+  b.textContent="💡 字母提示："+(store.hintOn?"开":"关");
+  b.classList.toggle("green", store.hintOn);
+  b.classList.toggle("gray", !store.hintOn);
+}
 
 $("practiceWrong").onclick=()=>{
   // 错题练习:在作用域错题里挑一个有题的模式开练
