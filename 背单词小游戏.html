@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>单词闯关乐园 🎮</title>
+<style>
+  :root {
+    /* 暖纸色调 · 收敛而和谐 */
+    --paper:#f7f4ef; --paper-2:#f1ece4;
+    --card:#fffdfa; --line:#ece5db;
+    --ink:#2b2a2e; --muted:#9b948c;
+    /* 主色:珊瑚 / 辅色:青绿 / 暖琥珀 / 雾紫 */
+    --primary:#e8705a; --primary-d:#cf5a45; --primary-soft:#fbeae5;
+    --teal:#3fa896; --teal-soft:#e3f3ef;
+    --blue:#5b8def; --blue-soft:#e8eefc;
+    --green:#5aa469; --green-soft:#e8f3ea;
+    --amber:#e0a13c; --amber-soft:#f9efdb;
+    --purple:#8c7bd0; --purple-soft:#eeeafb;
+    --gray:#b3ada4;
+    /* 柔和分层阴影 */
+    --shadow:0 1px 2px rgba(43,42,46,.04), 0 6px 20px rgba(43,42,46,.07);
+    --shadow-lg:0 2px 4px rgba(43,42,46,.05), 0 14px 38px rgba(43,42,46,.10);
+    --radius:18px; --radius-lg:24px;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; padding:0; height:100%; }
+  body {
+    font-family:ui-rounded,"SF Pro Rounded","Nunito","Quicksand","Segoe UI",
+                "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      radial-gradient(1100px 600px at 50% -10%, #fff 0%, rgba(255,255,255,0) 60%),
+      linear-gradient(180deg,var(--paper) 0%,var(--paper-2) 100%);
+    background-attachment:fixed;
+    color:var(--ink); min-height:100vh; overflow-x:hidden;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    letter-spacing:.1px;
+  }
+  #app { max-width:880px; margin:0 auto; padding:24px 18px 60px; }
+  .screen { display:none; }
+  .screen.active { display:block; animation:rise .4s cubic-bezier(.2,.7,.3,1); }
+  @keyframes rise { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  h1 { text-align:center; font-size:clamp(26px,5vw,38px); margin:14px 0 4px;
+       color:var(--ink); font-weight:800; letter-spacing:-.4px; }
+  .subtitle { text-align:center; color:var(--muted); margin:0 0 26px; font-size:15px; font-weight:600; }
+
+  .card { background:var(--card); border-radius:var(--radius-lg); box-shadow:var(--shadow);
+          border:1px solid var(--line); padding:24px; margin:16px 0; }
+
+  /* 按钮:扁平 + 克制的轻浮起,hover 微抬,active 回落 */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
+         border:none; border-radius:14px; padding:12px 20px; font-size:16px; font-weight:700;
+         cursor:pointer; color:#fff; background:var(--primary); font-family:inherit;
+         box-shadow:0 2px 6px rgba(232,112,90,.30); letter-spacing:.2px;
+         transition:transform .15s cubic-bezier(.2,.7,.3,1), box-shadow .15s, filter .15s; }
+  .btn:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(232,112,90,.34); }
+  .btn:active { transform:translateY(0); box-shadow:0 1px 3px rgba(232,112,90,.30); filter:brightness(.98); }
+  .btn.blue{background:var(--blue);box-shadow:0 2px 6px rgba(91,141,239,.30);}
+  .btn.blue:hover{box-shadow:0 6px 16px rgba(91,141,239,.34);}
+  .btn.green{background:var(--green);box-shadow:0 2px 6px rgba(90,164,105,.30);}
+  .btn.green:hover{box-shadow:0 6px 16px rgba(90,164,105,.34);}
+  .btn.purple{background:var(--purple);box-shadow:0 2px 6px rgba(140,123,208,.30);}
+  .btn.purple:hover{box-shadow:0 6px 16px rgba(140,123,208,.34);}
+  .btn.orange{background:var(--amber);box-shadow:0 2px 6px rgba(224,161,60,.30);}
+  .btn.orange:hover{box-shadow:0 6px 16px rgba(224,161,60,.34);}
+  /* 次要按钮:幽灵风格,更显克制 */
+  .btn.gray{background:#fff;color:var(--muted);border:1px solid var(--line);box-shadow:none;}
+  .btn.gray:hover{color:var(--ink);border-color:#d9d1c6;transform:translateY(-2px);box-shadow:var(--shadow);}
+  .btn.small{padding:8px 14px;font-size:14px;border-radius:11px;}
+  .btn.big{font-size:20px;padding:16px 26px;}
+  .btn-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;}
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); gap:14px; }
+  /* 卡片:发丝边框 + 顶部细色条在 hover 时出现的高级感 */
+  .tile { position:relative; background:var(--card); border-radius:var(--radius);
+          box-shadow:var(--shadow); padding:22px 16px; text-align:center; cursor:pointer;
+          border:1px solid var(--line); overflow:hidden;
+          transition:transform .18s cubic-bezier(.2,.7,.3,1), box-shadow .18s, border-color .18s; }
+  .tile::before { content:""; position:absolute; left:0; top:0; right:0; height:3px;
+          background:linear-gradient(90deg,var(--primary),var(--amber)); transform:scaleX(0);
+          transform-origin:left; transition:transform .25s ease; }
+  .tile:hover{transform:translateY(-5px); box-shadow:var(--shadow-lg); border-color:#e4dccf;}
+  .tile:hover::before{transform:scaleX(1);}
+  .tile.sel{border-color:var(--primary);}
+  .tile-total{background:linear-gradient(180deg,#fffdf8,#fdf6e8);border-color:#f0e2c4;}
+  .tile-total::before{transform:scaleX(1);background:linear-gradient(90deg,var(--amber),var(--primary));}
+  .tile .emoji{font-size:34px;display:block;margin-bottom:10px;}
+  .tile .t-title{font-weight:800;font-size:16px;letter-spacing:-.2px;}
+  .tile .t-sub{color:var(--muted);font-size:12.5px;margin-top:5px;font-weight:600;}
+  .badge{display:inline-block;background:var(--amber-soft);color:#9a6b16;border-radius:999px;
+         padding:3px 11px;font-size:12px;font-weight:800;margin-top:8px;border:1px solid #f0e2c4;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+  .crumbs{color:var(--muted);font-size:13.5px;font-weight:700;letter-spacing:.2px;}
+
+  /* gameplay */
+  .progressbar{height:10px;background:var(--paper-2);border-radius:999px;overflow:hidden;
+               margin:8px 0 16px;border:1px solid var(--line);}
+  .progressbar > div{height:100%;background:linear-gradient(90deg,var(--teal),var(--green));
+               width:0;transition:width .4s cubic-bezier(.2,.7,.3,1);border-radius:999px;}
+  .qmeta{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted);font-weight:700;margin-bottom:2px;}
+  .prompt-cn{font-size:clamp(22px,5vw,30px);font-weight:800;text-align:center;margin:8px 0;letter-spacing:-.3px;}
+  .prompt-ipa{text-align:center;color:var(--teal);font-size:17px;margin:2px 0;font-weight:600;font-style:italic;}
+  .speakbtn{display:inline-flex;margin:10px auto 2px;background:var(--teal-soft);color:#2a7d6f;
+            box-shadow:none;border:1px solid #c7e6df;}
+  .speakbtn:hover{background:#d7ede8;box-shadow:var(--shadow);}
+
+  .slots{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin:22px 0;}
+  .slot{width:46px;height:56px;border-radius:13px;background:#fff;display:flex;align-items:center;
+        justify-content:center;font-size:26px;font-weight:800;border:1.5px solid var(--line);
+        text-transform:lowercase;color:var(--ink);transition:all .15s;
+        box-shadow:0 1px 2px rgba(43,42,46,.04);}
+  .slot.fixed{background:var(--blue-soft);border-color:#cfdcfb;color:var(--blue);}
+  .slot.filled{background:#fff;border-color:var(--green);color:var(--ink);}
+  .slot.cursor{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft);}
+  .slot.space{background:transparent;border:none;width:16px;box-shadow:none;}
+
+  .sentence{font-size:clamp(20px,4.5vw,27px);font-weight:700;text-align:center;line-height:1.85;margin:16px 0;}
+  .sentence .blank{display:inline-block;min-width:96px;border-bottom:3px solid var(--primary);
+                   color:var(--primary);padding:0 8px;font-weight:800;}
+
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:20px 0;}
+  .option{background:#fff;border:1.5px solid var(--line);border-radius:15px;padding:16px;font-size:19px;
+          font-weight:700;cursor:pointer;text-align:center;display:flex;
+          align-items:center;gap:11px;justify-content:flex-start;box-shadow:0 1px 2px rgba(43,42,46,.04);
+          transition:transform .15s cubic-bezier(.2,.7,.3,1), box-shadow .15s, border-color .15s;}
+  .option:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:#ddd4c8;}
+  .option .num{background:var(--paper-2);color:var(--muted);border-radius:9px;width:30px;height:30px;
+               display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex:none;
+               font-weight:800;transition:all .15s;}
+  .option:hover .num{background:var(--blue-soft);color:var(--blue);}
+  .option.right{border-color:var(--green);background:var(--green-soft);}
+  .option.right .num{background:var(--green);color:#fff;}
+  .option.wrong{border-color:var(--primary);background:var(--primary-soft);}
+  .option.wrong .num{background:var(--primary);color:#fff;}
+
+  .feedback{text-align:center;font-size:20px;font-weight:800;min-height:28px;margin:10px 0;letter-spacing:-.2px;}
+  .feedback.ok{color:var(--green);} .feedback.no{color:var(--primary);}
+
+  /* virtual keyboard */
+  .keyboard{margin:22px auto 0;max-width:680px;padding:14px;background:var(--paper-2);
+            border-radius:18px;border:1px solid var(--line);}
+  .krow{display:flex;justify-content:center;gap:6px;margin-bottom:6px;}
+  .krow:last-child{margin-bottom:0;}
+  .key{flex:1;max-width:52px;height:48px;border-radius:11px;background:#fff;
+       box-shadow:0 1.5px 0 #e0d8cc, 0 2px 4px rgba(43,42,46,.05);
+       display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--ink);
+       text-transform:uppercase;user-select:none;cursor:pointer;transition:all .12s;}
+  .key:hover{transform:translateY(-1px);}
+  .key.wide{max-width:116px;flex:2;font-size:14px;color:var(--muted);}
+  .key.hl{background:var(--amber);color:#fff;box-shadow:0 1.5px 0 #c5871f, 0 0 0 4px var(--amber-soft);transform:translateY(-1px) scale(1.04);}
+  .key.good{background:var(--green);color:#fff;box-shadow:0 1.5px 0 #498a56;}
+  .key.bad{background:var(--primary);color:#fff;box-shadow:0 1.5px 0 var(--primary-d);animation:shake .3s;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+
+  .result-emoji{font-size:74px;text-align:center;line-height:1;margin-bottom:6px;}
+  .stars{font-size:42px;text-align:center;letter-spacing:8px;margin:4px 0 10px;}
+  .stat-line{font-size:18px;text-align:center;font-weight:700;margin:7px 0;color:var(--ink);}
+
+  .hint{color:var(--muted);font-size:13.5px;text-align:center;margin-top:12px;line-height:1.6;font-weight:500;}
+  .hidden-input{position:absolute;opacity:0;height:0;width:0;}
+  select,input[type=text]{font-family:inherit;font-size:15px;padding:10px 12px;border-radius:12px;
+          border:1.5px solid var(--line);background:#fff;color:var(--ink);font-weight:600;cursor:pointer;}
+  select:focus,input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+  label{font-weight:700;color:var(--ink);margin-right:6px;}
+  .filebtn{position:relative;overflow:hidden;}
+  .filebtn input{position:absolute;left:0;top:0;opacity:0;width:100%;height:100%;cursor:pointer;}
+  .toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(10px);
+         background:var(--ink);color:#fff;padding:12px 22px;border-radius:13px;font-weight:700;font-size:14.5px;
+         opacity:0;transition:opacity .3s, transform .3s;z-index:50;box-shadow:var(--shadow-lg);pointer-events:none;}
+  .toast.show{opacity:.96;transform:translateX(-50%) translateY(0);}
+  .empty{text-align:center;color:var(--muted);padding:34px;font-weight:600;}
+  .section-label{font-weight:800;font-size:15px;letter-spacing:-.2px;display:flex;align-items:center;gap:7px;}
+
+  /* 模态层(PDF 解析确认) */
+  .modal-mask{position:fixed;inset:0;background:rgba(43,42,46,.42);backdrop-filter:blur(3px);
+              display:none;align-items:center;justify-content:center;z-index:60;padding:18px;}
+  .modal-mask.show{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1);}
+  .modal{background:var(--card);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);
+         border:1px solid var(--line);padding:24px;max-width:560px;width:100%;max-height:88vh;overflow:auto;}
+  .modal h3{font-size:20px;letter-spacing:-.3px;}
+  .field{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .field label{flex:none;width:74px;}
+  .field input,.field select{flex:1;}
+  #pdfText{width:100%;min-height:200px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13.5px;
+           line-height:1.7;padding:12px;border-radius:12px;border:1.5px solid var(--line);
+           background:var(--paper);color:var(--ink);resize:vertical;}
+  #pdfText:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <section id="screen-home" class="screen active">
+    <h1>单词闯关乐园</h1>
+    <p class="subtitle">复习单词 · 练习句子 · 熟悉键盘</p>
+
+    <div class="card">
+      <div class="topbar">
+        <span class="section-label">📚 选择词库</span>
+
+      </div>
+      <div id="bankList" class="grid"></div>
+      <p class="hint">已内置四年级全部词库(U1U2 / U3U4 / U5U6 / 四会专项,共 236 条),选一个开始闯关吧!进度和错题自动记住。</p>
+    </div>
+
+    <div class="card">
+      <div class="btn-row">
+        <button class="btn blue small filebtn">导入备份<input type="file" id="importBackup" accept=".json"></button>
+        <button class="btn purple small" id="exportBackup">导出备份</button>
+      </div>
+      <p class="hint">进度和错题本存在本机浏览器。换设备时用"导出备份 / 导入备份"迁移。</p>
+    </div>
+  </section>
+
+  <!-- MODE SELECT -->
+  <section id="screen-mode" class="screen">
+    <div class="topbar">
+      <button class="btn gray small" data-go="home">← 返回</button>
+      <span class="crumbs" id="modeCrumbs"></span>
+    </div>
+    <h1 style="font-size:28px">选择闯关模式</h1>
+    <div class="grid" id="modeGrid"></div>
+
+    <div class="card" id="wrongbankCard">
+      <div class="topbar"><span class="section-label" id="wrongLabel">📒 错题本</span><span id="wrongCount" class="badge">0 题</span></div>
+      <p class="hint">第一次没做对、或答得太慢的题会进这里。连续答对 3 次就毕业!</p>
+      <div class="btn-row" style="justify-content:flex-start"><button class="btn orange" id="practiceWrong">开始练习错题本</button></div>
+    </div>
+
+    <div class="card">
+      <label>每关题数:</label>
+      <select id="qcount">
+        <option value="5">5 题</option>
+        <option value="10" selected>10 题</option>
+        <option value="15">15 题</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="screen-game" class="screen">
+    <div class="topbar">
+      <button class="btn gray small" data-go="mode">← 退出</button>
+      <span class="crumbs" id="gameCrumbs"></span>
+    </div>
+    <div class="qmeta"><span id="qProgress">第 1 / 10 题</span><span id="qScore">⭐ 0</span></div>
+    <div class="progressbar"><div id="qbar"></div></div>
+
+    <div class="card" id="gameCard"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="keyboard" id="keyboard"></div>
+    <input class="hidden-input" id="hiddenInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  </section>
+
+  <!-- RESULT -->
+  <section id="screen-result" class="screen">
+    <h1 style="font-size:30px">闯关结果</h1>
+    <div class="card">
+      <div class="result-emoji" id="resultEmoji">🎉</div>
+      <div class="stars" id="resultStars">⭐⭐⭐</div>
+      <div class="stat-line" id="resultScore"></div>
+      <div class="stat-line" id="resultTime"></div>
+      <div class="stat-line" id="resultWrong"></div>
+      <div class="btn-row" style="margin-top:18px">
+        <button class="btn green" id="againBtn">🔁 再来一关</button>
+        <button class="btn blue" data-go="mode">📋 换模式</button>
+        <button class="btn gray" data-go="home">🏠 回首页</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+
+
+
+
+<script>
+/* =========================================================
+   单词闯关乐园 — 全部逻辑(自包含,无外部依赖)
+   ========================================================= */
+
+const LS_KEY = "wordReviewTool.share.v1"; // 分享版独立存储,与开发版互不干扰
+// 内嵌四年级精品词库(4 子库,共 236 条),打开即用,无需加载
+const EMBEDDED_BANKS = [{"meta":{"child":"哥哥","title":"四下 Unit 1-2 People at work / How do you feel","grade":4},"items":[{"word":"doctor","meaning":"医生","ipa":"/ˈdɑːktər/","type":"word","example":"My father is a doctor.","exampleMeaning":"我爸爸是医生。"},{"word":"fireman","meaning":"消防队员","ipa":"/ˈfaɪərmən/","type":"word","example":"A fireman puts out fires.","exampleMeaning":"消防员灭火。"},{"word":"farmer","meaning":"农民","ipa":"/ˈfɑːrmər/","type":"word","example":"He works on a farm.","exampleMeaning":"他在农场工作。"},{"word":"cook","meaning":"厨师","ipa":"/kʊk/","type":"word","example":"The cook makes dinner.","exampleMeaning":"厨师做晚饭。"},{"word":"police","meaning":"警察","ipa":"/pəˈliːs/","type":"word","example":"The police help people.","exampleMeaning":"警察帮助人们。"},{"word":"painter","meaning":"画家","ipa":"/ˈpeɪntər/","type":"word","example":"Is he a painter?","exampleMeaning":"他是画家吗?"},{"word":"scientist","meaning":"科学家","ipa":"/ˈsaɪəntɪst/","type":"word","example":"He's a scientist.","exampleMeaning":"他是科学家。"},{"word":"writer","meaning":"作家","ipa":"/ˈraɪtər/","type":"word","example":"She is a writer.","exampleMeaning":"她是作家。"},{"word":"nurse","meaning":"护士","ipa":"/nɜːrs/","type":"word","example":"The nurse helps the doctor.","exampleMeaning":"护士协助医生。"},{"word":"driver","meaning":"司机","ipa":"/ˈdraɪvər/","type":"word","example":"Bus drivers work at night.","exampleMeaning":"公交车司机夜里工作。"},{"word":"worker","meaning":"工人","ipa":"/ˈwɜːrkər/","type":"word","example":"He is a worker.","exampleMeaning":"他是工人。"},{"word":"postman","meaning":"邮递员","ipa":"/ˈpoʊstmən/","type":"word","example":"The postman brings letters.","exampleMeaning":"邮递员送信。"},{"word":"aunt","meaning":"姑母;阿姨","ipa":"/ænt/","type":"word","example":"My aunt is a teacher.","exampleMeaning":"我阿姨是老师。"},{"word":"uncle","meaning":"叔叔;伯伯","ipa":"/ˈʌŋkl/","type":"word","example":"Uncle Jake likes to bake.","exampleMeaning":"杰克叔叔喜欢烘焙。"},{"word":"station","meaning":"所;站;台;局","ipa":"/ˈsteɪʃn/","type":"word","example":"I want to work in a fire station.","exampleMeaning":"我想在消防站工作。"},{"word":"fire","meaning":"火","ipa":"/ˈfaɪər/","type":"word","example":"Fire is hot.","exampleMeaning":"火是热的。"},{"word":"restaurant","meaning":"餐馆","ipa":"/ˈrestrɑːnt/","type":"word","example":"We eat at a restaurant.","exampleMeaning":"我们在餐馆吃饭。"},{"word":"owl","meaning":"猫头鹰","ipa":"/aʊl/","type":"word","example":"The owl comes out at night.","exampleMeaning":"猫头鹰夜里出来。"},{"word":"field","meaning":"田地;田野","ipa":"/fiːld/","type":"word","example":"He often works in the fields.","exampleMeaning":"他常在田里干活。"},{"word":"bee","meaning":"蜜蜂","ipa":"/biː/","type":"word","example":"A bee makes honey.","exampleMeaning":"蜜蜂酿蜜。"},{"word":"taxi","meaning":"出租车","ipa":"/ˈtæksi/","type":"word","example":"I take a taxi home.","exampleMeaning":"我打车回家。"},{"word":"brush","meaning":"刷子","ipa":"/brʌʃ/","type":"word","example":"Scientists use brushes a lot.","exampleMeaning":"科学家经常用刷子。"},{"word":"mountain","meaning":"高山","ipa":"/ˈmaʊntən/","type":"word","example":"He brings letters to people on mountains.","exampleMeaning":"他把信送到山上的人们那里。"},{"word":"night","meaning":"夜晚","ipa":"/naɪt/","type":"word","example":"They work at night.","exampleMeaning":"他们夜里工作。"},{"word":"life","meaning":"生活","ipa":"/laɪf/","type":"word","example":"Life is good.","exampleMeaning":"生活很美好。"},{"word":"letter","meaning":"信;函","ipa":"/ˈletər/","type":"word","example":"He brings letters to people.","exampleMeaning":"他给人们送信。"},{"word":"often","meaning":"经常","ipa":"/ˈɔːfn/","type":"word","example":"He often works in the fields.","exampleMeaning":"他经常在田里干活。"},{"word":"bake","meaning":"烘焙","ipa":"/beɪk/","type":"word","example":"Uncle Jake likes to bake.","exampleMeaning":"杰克叔叔喜欢烘焙。"},{"word":"bring","meaning":"带来;拿来","ipa":"/brɪŋ/","type":"word","example":"He brings letters to people.","exampleMeaning":"他给人们送信。"},{"word":"use","meaning":"使用","ipa":"/juːz/","type":"word","example":"Scientists use brushes a lot.","exampleMeaning":"科学家经常使用刷子。"},{"word":"light","meaning":"照亮","ipa":"/laɪt/","type":"word","example":"They light up the night.","exampleMeaning":"他们照亮夜晚。"},{"word":"safe","meaning":"安全的","ipa":"/seɪf/","type":"word","example":"It is safe here.","exampleMeaning":"这里很安全。"},{"word":"poor","meaning":"贫穷的","ipa":"/pʊr/","type":"word","example":"The poor man has no money.","exampleMeaning":"这个穷人没有钱。"},{"word":"same","meaning":"相同的","ipa":"/seɪm/","type":"word","example":"We are in the same class.","exampleMeaning":"我们在同一个班。"},{"word":"come out","meaning":"出来","ipa":"/kʌm aʊt/","type":"phrase","example":"I come out at night.","exampleMeaning":"我夜里出来。"},{"word":"light up","meaning":"点亮","ipa":"/laɪt ʌp/","type":"phrase","example":"They light up the night for others.","exampleMeaning":"他们为别人点亮夜晚。"},{"word":"give up","meaning":"放弃","ipa":"/ɡɪv ʌp/","type":"phrase","example":"He never gives up.","exampleMeaning":"他从不放弃。"},{"word":"sad","meaning":"难过的","ipa":"/sæd/","type":"word","example":"She is sad.","exampleMeaning":"她很难过。"},{"word":"angry","meaning":"生气的","ipa":"/ˈæŋɡri/","type":"word","example":"Don't be angry.","exampleMeaning":"别生气。"},{"word":"scared","meaning":"害怕的","ipa":"/skerd/","type":"word","example":"I am scared.","exampleMeaning":"我害怕。"},{"word":"excited","meaning":"兴奋的","ipa":"/ɪkˈsaɪtɪd/","type":"word","example":"She is excited.","exampleMeaning":"她很兴奋。"},{"word":"surprised","meaning":"吃惊的","ipa":"/sərˈpraɪzd/","type":"word","example":"I'm surprised!","exampleMeaning":"我很吃惊!"},{"word":"worried","meaning":"担心的","ipa":"/ˈwɜːrid/","type":"word","example":"Don't worry about your clothes.","exampleMeaning":"别担心你的衣服。"},{"word":"sorry","meaning":"抱歉的","ipa":"/ˈsɑːri/","type":"word","example":"You should say sorry.","exampleMeaning":"你应该道歉。"},{"word":"proud","meaning":"骄傲的","ipa":"/praʊd/","type":"word","example":"I am proud of you.","exampleMeaning":"我为你骄傲。"},{"word":"laugh","meaning":"大笑","ipa":"/læf/","type":"word","example":"They laugh together.","exampleMeaning":"他们一起大笑。"},{"word":"cry","meaning":"哭泣","ipa":"/kraɪ/","type":"word","example":"Why are you crying?","exampleMeaning":"你为什么哭?"},{"word":"frown","meaning":"皱眉","ipa":"/fraʊn/","type":"word","example":"Don't frown.","exampleMeaning":"别皱眉。"},{"word":"cough","meaning":"咳嗽","ipa":"/kɔːf/","type":"word","example":"Is she coughing?","exampleMeaning":"她在咳嗽吗?"},{"word":"practise","meaning":"练习","ipa":"/ˈpræktɪs/","type":"word","example":"I practise every day.","exampleMeaning":"我每天练习。"},{"word":"shout","meaning":"大喊","ipa":"/ʃaʊt/","type":"word","example":"Jay is shouting at Ray.","exampleMeaning":"杰伊在朝雷大喊。"},{"word":"break","meaning":"打碎","ipa":"/breɪk/","type":"word","example":"Don't break the cup.","exampleMeaning":"别把杯子打碎了。"},{"word":"hit","meaning":"碰撞","ipa":"/hɪt/","type":"word","example":"The ball hit the window.","exampleMeaning":"球撞到了窗户。"},{"word":"opera","meaning":"歌剧","ipa":"/ˈɑːprə/","type":"word","example":"She watches Beijing opera.","exampleMeaning":"她看京剧。"},{"word":"next","meaning":"下次的","ipa":"/nekst/","type":"word","example":"See you next time.","exampleMeaning":"下次见。"},{"word":"better","meaning":"好转","ipa":"/ˈbetər/","type":"word","example":"I'm feeling better now.","exampleMeaning":"我现在感觉好些了。"},{"word":"gift","meaning":"礼物","ipa":"/ɡɪft/","type":"word","example":"The gift is for my dad.","exampleMeaning":"这礼物是给我爸爸的。"},{"word":"model","meaning":"模型","ipa":"/ˈmɑːdl/","type":"word","example":"I made a model plane.","exampleMeaning":"我做了一架模型飞机。"},{"word":"bang","meaning":"砰","ipa":"/bæŋ/","type":"word","example":"Bang! The door closed.","exampleMeaning":"砰!门关上了。"},{"word":"should","meaning":"应该","ipa":"/ʃʊd/","type":"word","example":"You should say sorry.","exampleMeaning":"你应该道歉。"},{"word":"feeling","meaning":"感触","ipa":"/ˈfiːlɪŋ/","type":"word","example":"Tell me your feeling.","exampleMeaning":"告诉我你的感受。"},{"word":"huge","meaning":"巨大的","ipa":"/hjuːdʒ/","type":"word","example":"It's a huge cake.","exampleMeaning":"这是个巨大的蛋糕。"},{"word":"street","meaning":"大街","ipa":"/striːt/","type":"word","example":"Jay runs back to his room.","exampleMeaning":"杰伊跑回他的房间。"},{"word":"take part in","meaning":"参加","ipa":"/teɪk pɑːrt ɪn/","type":"phrase","example":"She can't take part in the show today.","exampleMeaning":"她今天不能参加演出了。"},{"word":"run back","meaning":"跑回","ipa":"/rʌn bæk/","type":"phrase","example":"Jay runs back to his room.","exampleMeaning":"杰伊跑回他的房间。"},{"word":"shout at","meaning":"对……大喊大叫","ipa":"/ʃaʊt æt/","type":"phrase","example":"I shouldn't shout at you.","exampleMeaning":"我不该对你大喊大叫。"},{"word":"What does he do?","meaning":"他是做什么的?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"He's a scientist.","meaning":"他是科学家。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Is he a painter?","meaning":"他是画家吗?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"He often works in the fields.","meaning":"他经常在田里干活。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Is she coughing?","meaning":"她在咳嗽吗?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Jay is shouting at Ray.","meaning":"杰伊在朝雷大喊。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"She is excited.","meaning":"她很兴奋。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"You should say sorry to each other.","meaning":"你们应该互相道歉。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"It's time for bed.","meaning":"该睡觉了。","ipa":"","type":"sentence","example":"","exampleMeaning":""}]},{"meta":{"child":"哥哥","title":"四下 Unit 3-4 Everyone's got talent / Plant life","grade":4},"items":[{"word":"talent","meaning":"天赋;才能","ipa":"/ˈtælənt/","type":"word","example":"I've got no talent.","exampleMeaning":"我没有天赋。"},{"word":"magic","meaning":"魔术","ipa":"/ˈmædʒɪk/","type":"word","example":"He can do magic with a hat.","exampleMeaning":"他能用帽子变魔术。"},{"word":"puzzle","meaning":"拼图游戏","ipa":"/ˈpʌzl/","type":"word","example":"She can do puzzles with one look.","exampleMeaning":"她看一眼就能拼好拼图。"},{"word":"dancer","meaning":"舞蹈演员","ipa":"/ˈdænsər/","type":"word","example":"She is dancing.","exampleMeaning":"她在跳舞。"},{"word":"boy","meaning":"男孩;儿子","ipa":"/bɔɪ/","type":"word","example":"Why are you crying, my boy?","exampleMeaning":"你为什么哭,孩子?"},{"word":"duck","meaning":"鸭子","ipa":"/dʌk/","type":"word","example":"A duck can swim.","exampleMeaning":"鸭子会游泳。"},{"word":"story","meaning":"故事","ipa":"/ˈstɔːri/","type":"word","example":"I write a story.","exampleMeaning":"我写故事。"},{"word":"act","meaning":"演出;扮演","ipa":"/ækt/","type":"word","example":"She can act in the show.","exampleMeaning":"她能在演出里表演。"},{"word":"shine","meaning":"出众","ipa":"/ʃaɪn/","type":"word","example":"Hard work makes me shine.","exampleMeaning":"努力让我出彩。"},{"word":"win","meaning":"获胜;赢","ipa":"/wɪn/","type":"word","example":"I can win the game.","exampleMeaning":"我能赢得比赛。"},{"word":"teach","meaning":"教","ipa":"/tiːtʃ/","type":"word","example":"Please teach me to run.","exampleMeaning":"请教我跑步。"},{"word":"worry","meaning":"担心","ipa":"/ˈwɜːri/","type":"word","example":"Don't worry about your clothes.","exampleMeaning":"别担心你的衣服。"},{"word":"ride","meaning":"骑","ipa":"/raɪd/","type":"word","example":"I can ride a bike.","exampleMeaning":"我会骑自行车。"},{"word":"give","meaning":"给予","ipa":"/ɡɪv/","type":"word","example":"Give me a hug.","exampleMeaning":"给我一个拥抱。"},{"word":"swim","meaning":"游泳","ipa":"/swɪm/","type":"word","example":"I'm good at swimming.","exampleMeaning":"我擅长游泳。"},{"word":"just","meaning":"就;只是","ipa":"/dʒʌst/","type":"word","example":"It's just a game.","exampleMeaning":"这只是个游戏。"},{"word":"slowly","meaning":"慢慢地","ipa":"/ˈsloʊli/","type":"word","example":"She walks slowly.","exampleMeaning":"她慢慢地走。"},{"word":"look at","meaning":"看","ipa":"/lʊk æt/","type":"phrase","example":"Look at their clothes.","exampleMeaning":"看他们的衣服。"},{"word":"play the piano","meaning":"弹钢琴","ipa":"/pleɪ ðə piˈænoʊ/","type":"phrase","example":"I can play the piano.","exampleMeaning":"我会弹钢琴。"},{"word":"worry about","meaning":"担心","ipa":"/ˈwɜːri əˈbaʊt/","type":"phrase","example":"Don't worry about your clothes.","exampleMeaning":"别担心你的衣服。"},{"word":"do puzzles","meaning":"拼拼图","ipa":"/duː ˈpʌzlz/","type":"phrase","example":"She can do puzzles with one look.","exampleMeaning":"她看一眼就能拼好拼图。"},{"word":"do magic","meaning":"变魔术","ipa":"/duː ˈmædʒɪk/","type":"phrase","example":"He can do magic with a hat.","exampleMeaning":"他能用帽子变魔术。"},{"word":"day and night","meaning":"日日夜夜","ipa":"/deɪ ænd naɪt/","type":"phrase","example":"I write day and night.","exampleMeaning":"我日夜写作。"},{"word":"take photos","meaning":"拍照","ipa":"/teɪk ˈfoʊtoʊz/","type":"phrase","example":"You can take photos.","exampleMeaning":"你可以拍照。"},{"word":"good at","meaning":"擅长","ipa":"/ɡʊd æt/","type":"phrase","example":"I'm good at swimming.","exampleMeaning":"我擅长游泳。"},{"word":"What are you looking at?","meaning":"你在看什么?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Why are you crying?","meaning":"你为什么哭?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"What is she doing?","meaning":"她在做什么?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"She is dancing.","meaning":"她在跳舞。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"seed","meaning":"种子","ipa":"/siːd/","type":"word","example":"The little seed grows up.","exampleMeaning":"小种子长大了。"},{"word":"root","meaning":"根","ipa":"/ruːt/","type":"word","example":"Roots hold the plant.","exampleMeaning":"根固定住植物。"},{"word":"stem","meaning":"茎","ipa":"/stem/","type":"word","example":"The stem is tall.","exampleMeaning":"茎很高。"},{"word":"leaf","meaning":"叶子","ipa":"/liːf/","type":"word","example":"The leaves are green.","exampleMeaning":"叶子是绿色的。"},{"word":"sunflower","meaning":"向日葵","ipa":"/ˈsʌnflaʊər/","type":"word","example":"A sunflower faces the sun.","exampleMeaning":"向日葵朝向太阳。"},{"word":"wheat","meaning":"小麦","ipa":"/wiːt/","type":"word","example":"We make bread from wheat.","exampleMeaning":"我们用小麦做面包。"},{"word":"cotton","meaning":"棉花","ipa":"/ˈkɑːtn/","type":"word","example":"We use cotton to make clothes.","exampleMeaning":"我们用棉花做衣服。"},{"word":"rice","meaning":"水稻","ipa":"/raɪs/","type":"word","example":"He wants to feed the world with his rice.","exampleMeaning":"他想用他的水稻养活世界。"},{"word":"cabbage","meaning":"卷心菜","ipa":"/ˈkæbɪdʒ/","type":"word","example":"I like cabbage.","exampleMeaning":"我喜欢卷心菜。"},{"word":"dig","meaning":"挖掘","ipa":"/dɪɡ/","type":"word","example":"The dog is digging.","exampleMeaning":"狗在挖土。"},{"word":"sleep","meaning":"睡觉","ipa":"/sliːp/","type":"word","example":"I sleep at night.","exampleMeaning":"我晚上睡觉。"},{"word":"miss","meaning":"想念","ipa":"/mɪs/","type":"word","example":"I miss Grandpa.","exampleMeaning":"我想念爷爷。"},{"word":"plant","meaning":"种植","ipa":"/plænt/","type":"word","example":"I plant seeds every spring.","exampleMeaning":"我每年春天种种子。"},{"word":"life","meaning":"一生","ipa":"/laɪf/","type":"word","example":"This is the life of a seed.","exampleMeaning":"这是一颗种子的一生。"},{"word":"thin","meaning":"细的","ipa":"/θɪn/","type":"word","example":"The stem is thin.","exampleMeaning":"茎很细。"},{"word":"mouse","meaning":"老鼠","ipa":"/maʊs/","type":"word","example":"A mouse runs fast.","exampleMeaning":"老鼠跑得快。"},{"word":"paper","meaning":"纸","ipa":"/ˈpeɪpər/","type":"word","example":"I write on paper.","exampleMeaning":"我在纸上写字。"},{"word":"earth","meaning":"泥土","ipa":"/ɜːrθ/","type":"word","example":"Put seeds in the earth.","exampleMeaning":"把种子放进泥土里。"},{"word":"will","meaning":"将要","ipa":"/wɪl/","type":"word","example":"His dreams will come true.","exampleMeaning":"他的梦想将会实现。"},{"word":"dream","meaning":"梦想","ipa":"/driːm/","type":"word","example":"His dreams will come true.","exampleMeaning":"他的梦想将会实现。"},{"word":"true","meaning":"真实的","ipa":"/truː/","type":"word","example":"His dreams will come true.","exampleMeaning":"他的梦想将会实现。"},{"word":"everything","meaning":"万物","ipa":"/ˈevriθɪŋ/","type":"word","example":"Everything grows.","exampleMeaning":"万物生长。"},{"word":"grow up","meaning":"生长","ipa":"/ɡroʊ ʌp/","type":"phrase","example":"The little seed grows up day by day.","exampleMeaning":"小种子一天天长大。"},{"word":"water the plants","meaning":"给植物浇水","ipa":"/ˈwɔːtər ðə plænts/","type":"phrase","example":"I water the plants every morning.","exampleMeaning":"我每天早上给植物浇水。"},{"word":"come true","meaning":"实现","ipa":"/kʌm truː/","type":"phrase","example":"His dreams will come true.","exampleMeaning":"他的梦想将会实现。"},{"word":"stand for","meaning":"代表","ipa":"/stænd fɔːr/","type":"phrase","example":"Red roses stand for love.","exampleMeaning":"红玫瑰代表爱情。"},{"word":"Are your seeds growing?","meaning":"你的种子在生长吗?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"We use plants to make clothes.","meaning":"我们用植物做衣服。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Put seeds in the earth.","meaning":"把种子放进泥土里。","ipa":"","type":"sentence","example":"","exampleMeaning":""}]},{"meta":{"child":"哥哥","title":"四下 Unit 5-6 School activities / Cool clothes","grade":4},"items":[{"word":"festival","meaning":"节;汇演","ipa":"/ˈfestɪvl/","type":"word","example":"It's for the Art Festival.","exampleMeaning":"这是为艺术节准备的。"},{"word":"drama","meaning":"戏剧","ipa":"/ˈdrɑːmə/","type":"word","example":"We have Drama Night.","exampleMeaning":"我们有戏剧之夜。"},{"word":"trip","meaning":"旅游;出行","ipa":"/trɪp/","type":"word","example":"We have a field trip.","exampleMeaning":"我们有实地考察。"},{"word":"fair","meaning":"集市;义卖会","ipa":"/fer/","type":"word","example":"We have a school fair.","exampleMeaning":"我们有学校集市。"},{"word":"design","meaning":"设计","ipa":"/dɪˈzaɪn/","type":"word","example":"I design a poster.","exampleMeaning":"我设计海报。"},{"word":"vote","meaning":"投票","ipa":"/voʊt/","type":"word","example":"We vote for the best.","exampleMeaning":"我们投票选最佳。"},{"word":"horn","meaning":"角","ipa":"/hɔːrn/","type":"word","example":"There are horns.","exampleMeaning":"这里有角。"},{"word":"dot","meaning":"小圆点","ipa":"/dɑːt/","type":"word","example":"It has a black dot.","exampleMeaning":"它有个黑点。"},{"word":"raindrop","meaning":"雨点","ipa":"/ˈreɪndrɑːp/","type":"word","example":"A raindrop falls.","exampleMeaning":"雨点落下。"},{"word":"note","meaning":"笔记","ipa":"/noʊt/","type":"word","example":"Please take notes.","exampleMeaning":"请记笔记。"},{"word":"hour","meaning":"小时","ipa":"/ˈaʊər/","type":"word","example":"You can go back in two hours.","exampleMeaning":"你两小时后就能回去。"},{"word":"forest","meaning":"森林","ipa":"/ˈfɔːrɪst/","type":"word","example":"He is a forest keeper.","exampleMeaning":"他是护林员。"},{"word":"keeper","meaning":"看护人","ipa":"/ˈkiːpər/","type":"word","example":"He is a forest keeper.","exampleMeaning":"他是护林员。"},{"word":"hometown","meaning":"家乡","ipa":"/ˈhoʊmtaʊn/","type":"word","example":"I love my hometown.","exampleMeaning":"我爱我的家乡。"},{"word":"stand","meaning":"展台","ipa":"/stænd/","type":"word","example":"We have a stand at the fair.","exampleMeaning":"我们在集市上有个展台。"},{"word":"culture","meaning":"文化","ipa":"/ˈkʌltʃər/","type":"word","example":"We learn about the culture.","exampleMeaning":"我们了解文化。"},{"word":"student","meaning":"学生","ipa":"/ˈstuːdnt/","type":"word","example":"There are some students in the park.","exampleMeaning":"公园里有些学生。"},{"word":"more","meaning":"更多的","ipa":"/mɔːr/","type":"word","example":"Are there more?","exampleMeaning":"还有更多吗?"},{"word":"special","meaning":"特殊的","ipa":"/ˈspeʃl/","type":"word","example":"There is a special activity.","exampleMeaning":"有个特殊活动。"},{"word":"lovely","meaning":"可爱的;美好的","ipa":"/ˈlʌvli/","type":"word","example":"What a lovely day!","exampleMeaning":"多美好的一天!"},{"word":"Science Day","meaning":"科学日","ipa":"","type":"phrase","example":"We have Science Day.","exampleMeaning":"我们有科学日。"},{"word":"Drama Night","meaning":"戏剧之夜","ipa":"","type":"phrase","example":"We have Drama Night.","exampleMeaning":"我们有戏剧之夜。"},{"word":"Picnic Day","meaning":"野餐日","ipa":"","type":"phrase","example":"We have Picnic Day.","exampleMeaning":"我们有野餐日。"},{"word":"Sports Day","meaning":"运动会","ipa":"","type":"phrase","example":"We have Sports Day.","exampleMeaning":"我们有运动会。"},{"word":"the Art Festival","meaning":"艺术节","ipa":"","type":"phrase","example":"It's for the Art Festival.","exampleMeaning":"这是为艺术节准备的。"},{"word":"field trip","meaning":"实地考察","ipa":"/fiːld trɪp/","type":"phrase","example":"We have a field trip.","exampleMeaning":"我们有实地考察。"},{"word":"culture fair","meaning":"文化集市","ipa":"","type":"phrase","example":"We have a culture fair.","exampleMeaning":"我们有文化集市。"},{"word":"have fun","meaning":"玩得开心","ipa":"/hæv fʌn/","type":"phrase","example":"Let's have fun with our friends.","exampleMeaning":"让我们和朋友玩得开心。"},{"word":"look like","meaning":"看起来像","ipa":"/lʊk laɪk/","type":"phrase","example":"The clouds look like little rabbits.","exampleMeaning":"云看起来像小兔子。"},{"word":"take notes","meaning":"记笔记","ipa":"/teɪk noʊts/","type":"phrase","example":"Please take notes at the culture fair.","exampleMeaning":"请在文化集市上记笔记。"},{"word":"fall off","meaning":"掉下","ipa":"/fɔːl ɔːf/","type":"phrase","example":"The little bird doesn't fall off the tree.","exampleMeaning":"小鸟没从树上掉下来。"},{"word":"There are horns.","meaning":"这里有角。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Are there more?","meaning":"还有更多吗?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Is there a book on the desk?","meaning":"桌上有书吗?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"There are two birds in the tree.","meaning":"树上有两只鸟。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"T-shirt","meaning":"T 恤","ipa":"/ˈtiːʃɜːrt/","type":"word","example":"We're wearing T-shirts with our names.","exampleMeaning":"我们穿着印有名字的 T 恤。"},{"word":"skirt","meaning":"半裙","ipa":"/skɜːrt/","type":"word","example":"I'm looking for my blue skirt.","exampleMeaning":"我在找我的蓝裙子。"},{"word":"shorts","meaning":"短裤","ipa":"/ʃɔːrts/","type":"word","example":"He wears shorts in summer.","exampleMeaning":"他夏天穿短裤。"},{"word":"shirt","meaning":"衬衫","ipa":"/ʃɜːrt/","type":"word","example":"This is my new shirt.","exampleMeaning":"这是我的新衬衫。"},{"word":"trousers","meaning":"裤子","ipa":"/ˈtraʊzərz/","type":"word","example":"I need new trousers.","exampleMeaning":"我需要新裤子。"},{"word":"scarf","meaning":"围巾","ipa":"/skɑːrf/","type":"word","example":"She wears a red scarf.","exampleMeaning":"她戴着红围巾。"},{"word":"dress","meaning":"连衣裙","ipa":"/dres/","type":"word","example":"Mum is cutting up my old dress.","exampleMeaning":"妈妈在裁剪我的旧裙子。"},{"word":"uniform","meaning":"制服","ipa":"/ˈjuːnɪfɔːrm/","type":"word","example":"We wear school uniforms.","exampleMeaning":"我们穿校服。"},{"word":"robe","meaning":"长袍","ipa":"/roʊb/","type":"word","example":"He wears a long robe.","exampleMeaning":"他穿长袍。"},{"word":"sweater","meaning":"毛衣","ipa":"/ˈswetər/","type":"word","example":"I wear a sweater in winter.","exampleMeaning":"我冬天穿毛衣。"},{"word":"clever","meaning":"聪明的","ipa":"/ˈklevər/","type":"word","example":"The boy is clever.","exampleMeaning":"这个男孩很聪明。"},{"word":"same","meaning":"相同的","ipa":"/seɪm/","type":"word","example":"We are in the same school.","exampleMeaning":"我们在同一所学校。"},{"word":"wrong","meaning":"错误的","ipa":"/rɔːŋ/","type":"word","example":"That is wrong.","exampleMeaning":"那是错的。"},{"word":"party","meaning":"聚会","ipa":"/ˈpɑːrti/","type":"word","example":"We need clothes for a party.","exampleMeaning":"我们需要聚会穿的衣服。"},{"word":"whale","meaning":"鲸","ipa":"/weɪl/","type":"word","example":"A whale is huge.","exampleMeaning":"鲸很大。"},{"word":"Mr","meaning":"先生","ipa":"/ˈmɪstər/","type":"word","example":"Mr Lee is our teacher.","exampleMeaning":"李先生是我们的老师。"},{"word":"dressmaker","meaning":"裁缝","ipa":"/ˈdresmeɪkər/","type":"word","example":"The dressmaker can make clothes for us.","exampleMeaning":"裁缝能为我们做衣服。"},{"word":"look for","meaning":"寻找","ipa":"/lʊk fɔːr/","type":"phrase","example":"I'm looking for my blue skirt everywhere.","exampleMeaning":"我到处找我的蓝裙子。"},{"word":"cut up","meaning":"裁剪","ipa":"/kʌt ʌp/","type":"phrase","example":"Mum is cutting up my old dress.","exampleMeaning":"妈妈在裁剪我的旧裙子。"},{"word":"come from","meaning":"来自","ipa":"/kʌm frʌm/","type":"phrase","example":"Silk comes from silkworms.","exampleMeaning":"丝绸来自蚕。"},{"word":"make clothes","meaning":"做衣服","ipa":"/meɪk kloʊðz/","type":"phrase","example":"The dressmaker can make clothes for us.","exampleMeaning":"裁缝能为我们做衣服。"},{"word":"We're wearing T-shirts with our names.","meaning":"我们穿着印有名字的 T 恤。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"We need clothes for a party.","meaning":"我们需要聚会穿的衣服。","ipa":"","type":"sentence","example":"","exampleMeaning":""}]},{"meta":{"child":"哥哥","title":"四下 四会词汇默写专项","grade":4},"items":[{"word":"doctor","meaning":"医生","ipa":"/ˈdɑːktər/","type":"word","example":"","exampleMeaning":""},{"word":"farmer","meaning":"农民","ipa":"/ˈfɑːrmər/","type":"word","example":"","exampleMeaning":""},{"word":"cook","meaning":"厨师","ipa":"/kʊk/","type":"word","example":"","exampleMeaning":""},{"word":"police","meaning":"警察","ipa":"/pəˈliːs/","type":"word","example":"","exampleMeaning":""},{"word":"worker","meaning":"工人","ipa":"/ˈwɜːrkər/","type":"word","example":"","exampleMeaning":""},{"word":"driver","meaning":"司机","ipa":"/ˈdraɪvər/","type":"word","example":"","exampleMeaning":""},{"word":"nurse","meaning":"护士","ipa":"/nɜːrs/","type":"word","example":"","exampleMeaning":""},{"word":"student","meaning":"学生","ipa":"/ˈstuːdnt/","type":"word","example":"","exampleMeaning":""},{"word":"Mr","meaning":"先生","ipa":"/ˈmɪstər/","type":"word","example":"","exampleMeaning":""},{"word":"aunt","meaning":"姑姑;阿姨","ipa":"/ænt/","type":"word","example":"","exampleMeaning":""},{"word":"uncle","meaning":"叔叔;伯伯","ipa":"/ˈʌŋkl/","type":"word","example":"","exampleMeaning":""},{"word":"bee","meaning":"蜜蜂","ipa":"/biː/","type":"word","example":"","exampleMeaning":""},{"word":"street","meaning":"街道","ipa":"/striːt/","type":"word","example":"","exampleMeaning":""},{"word":"hometown","meaning":"家乡","ipa":"/ˈhoʊmtaʊn/","type":"word","example":"","exampleMeaning":""},{"word":"taxi","meaning":"出租车","ipa":"/ˈtæksi/","type":"word","example":"","exampleMeaning":""},{"word":"sad","meaning":"伤心的","ipa":"/sæd/","type":"word","example":"","exampleMeaning":""},{"word":"angry","meaning":"生气的","ipa":"/ˈæŋɡri/","type":"word","example":"","exampleMeaning":""},{"word":"excited","meaning":"兴奋的","ipa":"/ɪkˈsaɪtɪd/","type":"word","example":"","exampleMeaning":""},{"word":"thin","meaning":"瘦的;细的","ipa":"/θɪn/","type":"word","example":"","exampleMeaning":""},{"word":"lovely","meaning":"可爱的","ipa":"/ˈlʌvli/","type":"word","example":"","exampleMeaning":""},{"word":"wrong","meaning":"错误的","ipa":"/rɔːŋ/","type":"word","example":"","exampleMeaning":""},{"word":"clever","meaning":"聪明的","ipa":"/ˈklevər/","type":"word","example":"","exampleMeaning":""},{"word":"next","meaning":"下次的;紧接着的","ipa":"/nekst/","type":"word","example":"","exampleMeaning":""},{"word":"safe","meaning":"安全的","ipa":"/seɪf/","type":"word","example":"","exampleMeaning":""},{"word":"gift","meaning":"礼物","ipa":"/ɡɪft/","type":"word","example":"","exampleMeaning":""},{"word":"boy","meaning":"男孩","ipa":"/bɔɪ/","type":"word","example":"","exampleMeaning":""},{"word":"paper","meaning":"纸","ipa":"/ˈpeɪpər/","type":"word","example":"","exampleMeaning":""},{"word":"hour","meaning":"小时","ipa":"/ˈaʊər/","type":"word","example":"","exampleMeaning":""},{"word":"party","meaning":"聚会","ipa":"/ˈpɑːrti/","type":"word","example":"","exampleMeaning":""},{"word":"night","meaning":"夜晚","ipa":"/naɪt/","type":"word","example":"","exampleMeaning":""},{"word":"light","meaning":"光亮;照亮","ipa":"/laɪt/","type":"word","example":"","exampleMeaning":""},{"word":"earth","meaning":"泥土","ipa":"/ɜːrθ/","type":"word","example":"","exampleMeaning":""},{"word":"should","meaning":"应该","ipa":"/ʃʊd/","type":"word","example":"","exampleMeaning":""},{"word":"use","meaning":"使用","ipa":"/juːz/","type":"word","example":"","exampleMeaning":""},{"word":"often","meaning":"经常;时常","ipa":"/ˈɔːfn/","type":"word","example":"","exampleMeaning":""},{"word":"plant","meaning":"种植","ipa":"/plænt/","type":"word","example":"","exampleMeaning":""},{"word":"sleep","meaning":"睡觉","ipa":"/sliːp/","type":"word","example":"","exampleMeaning":""},{"word":"will","meaning":"将要","ipa":"/wɪl/","type":"word","example":"","exampleMeaning":""},{"word":"win","meaning":"赢","ipa":"/wɪn/","type":"word","example":"","exampleMeaning":""},{"word":"skirt","meaning":"短裙","ipa":"/skɜːrt/","type":"word","example":"","exampleMeaning":""},{"word":"shorts","meaning":"短裤","ipa":"/ʃɔːrts/","type":"word","example":"","exampleMeaning":""},{"word":"shirt","meaning":"衬衫","ipa":"/ʃɜːrt/","type":"word","example":"","exampleMeaning":""},{"word":"trousers","meaning":"裤子","ipa":"/ˈtraʊzərz/","type":"word","example":"","exampleMeaning":""},{"word":"sweater","meaning":"毛衣","ipa":"/ˈswetər/","type":"word","example":"","exampleMeaning":""},{"word":"dress","meaning":"连衣裙","ipa":"/dres/","type":"word","example":"","exampleMeaning":""}]}];
+
+/* ---------- 持久化数据 ---------- */
+// store = { banks:{id:{meta,items}}, progress:{bankId:{stars}}, wrong:{bankId:[{key,streak}]},
+//           timing:{mode:{n,mean,m2}} }   // m2 用于在线方差(Welford)
+let store = loadStore();
+
+function loadStore(){
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw) return JSON.parse(raw);
+  } catch(e){}
+  return { banks:{}, progress:{}, wrong:{}, timing:{} };
+}
+function saveStore(){ localStorage.setItem(LS_KEY, JSON.stringify(store)); }
+
+/* ---------- 工具函数 ---------- */
+function $(id){ return document.getElementById(id); }
+function show(screen){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $("screen-"+screen).classList.add("active");
+  window.scrollTo(0,0);
+}
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1800);
+}
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function itemKey(bankId,it){ return bankId+"::"+it.word; }
+
+/* ---------- 发音(Web Speech API) ---------- */
+function speak(text){
+  if(!text || !window.speechSynthesis) return;
+  try {
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang="en-US"; u.rate=0.85;
+    speechSynthesis.speak(u);
+  } catch(e){}
+}
+
+/* =========================================================
+   词库加载与首页
+   ========================================================= */
+function bankId(meta){ return (meta.child||"?")+"｜"+(meta.title||"未命名"); }
+
+function addBank(data){
+  if(!data || !data.meta || !Array.isArray(data.items)){ toast("文件格式不对 😕"); return; }
+  const id=bankId(data.meta);
+  store.banks[id]={ meta:data.meta, items:data.items };
+  if(!store.progress[id]) store.progress[id]={stars:0};
+  if(!store.wrong[id]) store.wrong[id]=[];
+  saveStore();
+  renderBanks();
+  toast("已加载:"+data.meta.title);
+}
+
+function renderBanks(){
+  const list=$("bankList"); list.innerHTML="";
+  const ids=Object.keys(store.banks);
+  if(ids.length===0){ list.innerHTML='<p class="empty">还没有词库,点右上角"➕ 加载词库"添加吧!</p>'; return; }
+  // 按孩子分组
+  const byChild={};
+  ids.forEach(id=>{ const c=store.banks[id].meta.child||"未分组"; (byChild[c]=byChild[c]||[]).push(id); });
+  Object.keys(byChild).forEach(child=>{
+    const head=document.createElement("div");
+    head.style.cssText="grid-column:1/-1;font-weight:800;color:var(--muted);margin-top:6px;font-size:14px;";
+    head.textContent="👦 "+child;
+    list.appendChild(head);
+    // 该孩子名下子库
+    byChild[child].forEach(id=>{
+      const b=store.banks[id]; const stars=(store.progress[id]||{}).stars||0;
+      const wrong=(store.wrong[id]||[]).length;
+      const tile=document.createElement("div");
+      tile.className="tile";
+      tile.innerHTML=`<span class="emoji">📗</span>
+        <div class="t-title">${b.meta.title}</div>
+        <div class="t-sub">${b.items.length} 个条目 · ${b.meta.grade?('年级 '+b.meta.grade):''}</div>
+        <div class="badge">⭐ ${stars}${wrong?(' · 📒 '+wrong):''}</div>`;
+      tile.onclick=()=>enterBank(id);
+      list.appendChild(tile);
+    });
+    // 总库卡片(名下所有子库合并)。仅当有 2 个及以上子库时才显示,单子库无意义
+    if(byChild[child].length>=2){
+      const totItems=byChild[child].reduce((n,id)=>n+store.banks[id].items.length,0);
+      const totWrong=byChild[child].reduce((n,id)=>n+(store.wrong[id]||[]).length,0);
+      const tstars=(store.progress["__total__::"+child]||{}).stars||0;
+      const tile=document.createElement("div");
+      tile.className="tile tile-total";
+      tile.innerHTML=`<span class="emoji">📚</span>
+        <div class="t-title">总库</div>
+        <div class="t-sub">${byChild[child].length} 个子库 · ${totItems} 个条目</div>
+        <div class="badge">⭐ ${tstars}${totWrong?(' · 📒 '+totWrong):''}</div>`;
+      tile.onclick=()=>enterTotal(child);
+      list.appendChild(tile);
+    }
+  });
+}
+
+/* =========================================================
+   模式选择
+   ========================================================= */
+const MODES=[
+  {id:"spell1", emoji:"✏️", title:"拼写闯关 1", sub:"补全缺字母的单词"},
+  {id:"spell2", emoji:"⌨️", title:"拼写闯关 2", sub:"看释义默写整词"},
+  {id:"mean1",  emoji:"🤔", title:"意思闯关 1", sub:"看单词选意思"},
+  {id:"mean2",  emoji:"🔤", title:"意思闯关 2", sub:"看意思选单词"},
+  {id:"cloze",  emoji:"📝", title:"完形填空",   sub:"句子里敲出单词"},
+];
+
+let scope=null; // {kind:'bank'|'total', child, title, bankIds:[...]}
+
+/* 进入一个子库 */
+function enterBank(id){
+  const b=store.banks[id];
+  enterScope({ kind:"bank", child:b.meta.child||"", title:b.meta.title, bankIds:[id] });
+}
+/* 进入某个孩子的总库(名下所有子库合并) */
+function enterTotal(child){
+  const ids=Object.keys(store.banks).filter(id=>(store.banks[id].meta.child||"未分组")===child);
+  enterScope({ kind:"total", child, title:"总库(全部子库)", bankIds:ids });
+}
+
+function enterScope(sc){
+  scope=sc;
+  $("modeCrumbs").textContent=(sc.child||"")+" · "+sc.title;
+  const grid=$("modeGrid"); grid.innerHTML="";
+  MODES.forEach(m=>{
+    const tile=document.createElement("div");
+    tile.className="tile";
+    tile.innerHTML=`<span class="emoji">${m.emoji}</span><div class="t-title">${m.title}</div><div class="t-sub">${m.sub}</div>`;
+    tile.onclick=()=>startGame(m.id,false);
+    grid.appendChild(tile);
+  });
+  $("wrongLabel").textContent = sc.kind==="total" ? "📒 总库错题本" : "📒 子库错题本";
+  $("wrongCount").textContent=scopeWrong().length+" 题";
+  show("mode");
+}
+
+/* ---------- 作用域工具:跨子库取条目 / 取错题 ---------- */
+// 返回作用域内全部条目,每条带 _bid(来源子库)与 _grade
+function scopeItems(){
+  const out=[];
+  scope.bankIds.forEach(bid=>{
+    const b=store.banks[bid]; if(!b) return;
+    const g=b.meta.grade||4;
+    b.items.forEach(it=> out.push(Object.assign({}, it, {_bid:bid, _grade:g})));
+  });
+  return out;
+}
+// 返回作用域内全部错题条目(已映射回 item,带 _bid/_grade)
+function scopeWrongItems(){
+  const out=[];
+  scope.bankIds.forEach(bid=>{
+    const b=store.banks[bid]; if(!b) return;
+    const keys=(store.wrong[bid]||[]).map(w=>w.key);
+    const g=b.meta.grade||4;
+    b.items.forEach(it=>{ if(keys.includes(itemKey(bid,it))) out.push(Object.assign({}, it, {_bid:bid, _grade:g})); });
+  });
+  return out;
+}
+// 作用域内错题原始记录(扁平)
+function scopeWrong(){
+  const out=[];
+  scope.bankIds.forEach(bid=>{ (store.wrong[bid]||[]).forEach(w=>out.push(w)); });
+  return out;
+}
+// 作用域进度存储 id(子库用自身 id;总库用合成 id)
+function scopeProgressId(){ return scope.kind==="total" ? ("__total__::"+scope.child) : scope.bankIds[0]; }
+
+/* =========================================================
+   出题:根据模式与年级筛选条目(作用域内,跨子库)
+   ========================================================= */
+function eligibleItems(mode){
+  const items=scopeItems();
+  if(mode==="spell1"||mode==="spell2"){
+    return items.filter(it=> it.type==="word" || (mode==="spell1"&&it.type==="phrase"&&!it.word.includes(" ")));
+  }
+  if(mode==="mean1"||mode==="mean2"){
+    return items.filter(it=> (it.type==="word"||it.type==="phrase") && it.meaning);
+  }
+  if(mode==="cloze"){
+    return items.filter(it=> (it.example && it.example.split(" ").length>=2) );
+  }
+  return items;
+}
+
+/* =========================================================
+   游戏主循环
+   ========================================================= */
+let game=null; // {mode, queue:[], idx, correct, startTs, qStartTs, fromWrong}
+
+function startGame(mode, fromWrong){
+  const qcount=parseInt($("qcount").value,10);
+  let pool;
+  if(fromWrong){
+    pool=scopeWrongItems().filter(it=>isItemUsable(mode,it));
+    if(pool.length===0){ toast("错题本里没有适合这个模式的题 🙂"); return; }
+  } else {
+    pool=eligibleItems(mode);
+    if(pool.length===0){ toast("这个词库没有适合该模式的内容 🙂"); return; }
+  }
+  const n=Math.min(qcount, Math.max(pool.length, 3));
+  // 题目数量不足时允许重复
+  let queue=shuffle(pool);
+  while(queue.length<n) queue=queue.concat(shuffle(pool));
+  queue=queue.slice(0,n);
+
+  game={ mode, queue, idx:0, correct:0, fromWrong,
+         startTs:Date.now(), qStartTs:0, attempted:false };
+  $("gameCrumbs").textContent=(fromWrong?"📒 错题练习 · ":"")+(scope.kind==="total"?"总库 · ":"")+modeTitle(mode);
+  show("game");
+  nextQuestion();
+}
+function modeTitle(m){ return (MODES.find(x=>x.id===m)||{}).title||m; }
+
+function nextQuestion(){
+  if(game.idx>=game.queue.length){ finishGame(); return; }
+  const total=game.queue.length;
+  $("qProgress").textContent=`第 ${game.idx+1} / ${total} 题`;
+  $("qScore").textContent="⭐ "+game.correct;
+  $("qbar").style.width=(game.idx/total*100)+"%";
+  $("feedback").textContent=""; $("feedback").className="feedback";
+  game.attempted=false;
+  game.qStartTs=Date.now();
+  const it=game.queue[game.idx];
+  const render={spell1:renderSpell1,spell2:renderSpell2,mean1:renderMean1,mean2:renderMean2,cloze:renderCloze}[game.mode];
+  render(it);
+}
+
+/* 判定一道题结束:记录正误、超时、错题本、统计 */
+function judge(it, isRight){
+  if(game.attempted) return; // 防重复
+  game.attempted=true;
+  const elapsed=(Date.now()-game.qStartTs)/1000;
+  const bid=it._bid;                       // 错题归属其来源子库
+  const key=itemKey(bid, it);
+
+  let slow=false;
+  if(isRight){
+    slow=recordTimingAndCheckSlow(game.mode, elapsed); // 仅答对才计入耗时统计
+  }
+
+  if(isRight && !slow){
+    game.correct++;
+    // 错题本中:连续答对 +1,够 3 次毕业
+    if(game.fromWrong) bumpWrongStreak(bid, key, true);
+    else if(isInWrong(bid, key)) bumpWrongStreak(bid, key, true);
+    flash(true, slow);
+  } else {
+    // 答错,或答对但太慢 -> 进错题本
+    addToWrong(bid, key);
+    if(game.fromWrong) bumpWrongStreak(bid, key, false); // 错题练习里做错,连击清零
+    flash(false, slow && isRight);
+  }
+  saveStore();
+}
+
+function flash(ok, slowButRight){
+  const fb=$("feedback");
+  if(ok){ fb.textContent=pick(["太棒了! 🎉","真厉害! ⭐","答对啦! 👍","完美! 💯"]); fb.className="feedback ok"; }
+  else if(slowButRight){ fb.textContent="对了,但有点慢,记进错题本多练练 ⏱️"; fb.className="feedback no"; }
+  else { fb.textContent="没关系,记下来下次就会啦 💪"; fb.className="feedback no"; }
+  setTimeout(()=>{ game.idx++; nextQuestion(); }, ok?900:1700);
+}
+
+/* ---------- 耗时统计(Welford 在线均值/方差,按题型) ---------- */
+function recordTimingAndCheckSlow(mode, x){
+  const t=store.timing[mode] || {n:0,mean:0,m2:0};
+  let slow=false;
+  if(t.n>=10){
+    const sd=Math.sqrt(t.m2/(t.n-1));
+    if(x > t.mean + sd) slow=true; // 超过 μ+1σ
+  }
+  // 更新统计
+  t.n++; const d=x-t.mean; t.mean+=d/t.n; const d2=x-t.mean; t.m2+=d*d2;
+  store.timing[mode]=t;
+  return slow;
+}
+
+/* ---------- 错题本(按子库 bid 存储) ---------- */
+function getWrong(bid){ return store.wrong[bid]=store.wrong[bid]||[]; }
+function isInWrong(bid, key){ return getWrong(bid).some(w=>w.key===key); }
+function addToWrong(bid, key){
+  const w=getWrong(bid);
+  if(!w.some(x=>x.key===key)) w.push({key, streak:0});
+}
+function bumpWrongStreak(bid, key, correct){
+  const w=getWrong(bid); const e=w.find(x=>x.key===key); if(!e) return;
+  if(correct){ e.streak=(e.streak||0)+1; if(e.streak>=3){ store.wrong[bid]=w.filter(x=>x.key!==key); } }
+  else { e.streak=0; }
+}
+
+/* =========================================================
+   虚拟键盘
+   ========================================================= */
+const KB_ROWS=[
+  "qwertyuiop".split(""),
+  "asdfghjkl".split(""),
+  "zxcvbnm".split(""),
+];
+function buildKeyboard(showLetters){
+  const kb=$("keyboard"); kb.innerHTML="";
+  if(!showLetters){ kb.style.display="none"; return; }
+  kb.style.display="block";
+  KB_ROWS.forEach(row=>{
+    const r=document.createElement("div"); r.className="krow";
+    row.forEach(ch=>{
+      const k=document.createElement("div"); k.className="key"; k.dataset.k=ch; k.textContent=ch;
+      k.onclick=()=>handleLetter(ch);
+      r.appendChild(k);
+    });
+    kb.appendChild(r);
+  });
+  // 退格行
+  const r=document.createElement("div"); r.className="krow";
+  const bk=document.createElement("div"); bk.className="key wide"; bk.dataset.k="Backspace"; bk.textContent="⌫ 删除";
+  bk.onclick=()=>handleBackspace();
+  r.appendChild(bk); kb.appendChild(r);
+}
+function highlightKey(ch){
+  document.querySelectorAll(".key").forEach(k=>k.classList.remove("hl"));
+  if(!ch) return;
+  const k=document.querySelector('.key[data-k="'+ch.toLowerCase()+'"]');
+  if(k) k.classList.add("hl");
+}
+function keyFeedback(ch, good){
+  const k=document.querySelector('.key[data-k="'+ch.toLowerCase()+'"]');
+  if(!k) return;
+  k.classList.add(good?"good":"bad");
+  setTimeout(()=>k.classList.remove(good?"good":"bad"),300);
+}
+
+/* =========================================================
+   模式 ①  拼写闯关 1 — 补全缺字母
+   ========================================================= */
+let spell=null; // {answer, slots:[{ch,fixed,filled}], cursor}
+
+function renderSpell1(it){
+  const word=it.word.toLowerCase();
+  const grade=it._grade||4;
+  const letters=word.split("");
+  const idxLetters=letters.map((c,i)=>({c,i})).filter(o=>/[a-z]/.test(o.c));
+  // 隐藏比例:一年级约 1/3 且偏后,四年级过半随机
+  let hideCount, hideSet=new Set();
+  if(grade<=2){
+    hideCount=Math.max(1, Math.round(idxLetters.length/3));
+    const tail=idxLetters.slice(Math.ceil(idxLetters.length/2)); // 后半段
+    shuffle(tail).slice(0,hideCount).forEach(o=>hideSet.add(o.i));
+  } else {
+    hideCount=Math.max(2, Math.ceil(idxLetters.length*0.6));
+    shuffle(idxLetters).slice(0,hideCount).forEach(o=>hideSet.add(o.i));
+  }
+  const slots=letters.map((c,i)=>{
+    if(c===" ") return {ch:" ", space:true};
+    if(hideSet.has(i)) return {ch:c, fixed:false, filled:false, val:""};
+    return {ch:c, fixed:true};
+  });
+  spell={answer:word, slots, cursor:firstBlank(slots)};
+  drawSpell(it, true);
+}
+
+/* 模式 ② 拼写闯关 2 — 全词默写(全部空格) */
+function renderSpell2(it){
+  const word=it.word.toLowerCase();
+  const grade=it._grade||4;
+  const slots=word.split("").map(c=> c===" "?{ch:" ",space:true}:{ch:c,fixed:false,filled:false,val:""});
+  spell={answer:word, slots, cursor:firstBlank(slots), allowFirstHint:grade<=2};
+  drawSpell(it, false, spell.allowFirstHint);
+}
+
+function firstBlank(slots){ return slots.findIndex(s=>!s.fixed && !s.space); }
+
+function drawSpell(it, isSpell1, allowHint){
+  const card=$("gameCard");
+  card.innerHTML=`
+    <div class="prompt-cn">${it.meaning}</div>
+    <button class="btn small speakbtn" id="spk">🔊 听发音</button>
+    <div class="slots" id="slots"></div>
+    ${it.type==="phrase"?'<p class="hint">这是个词组,注意空格</p>':''}
+    ${allowHint?'<div class="btn-row"><button class="btn gray small" id="hintBtn">💡 提示首字母</button></div>':''}
+  `;
+  $("spk").onclick=()=>speak(it.word);
+  if(allowHint) $("hintBtn").onclick=()=>{
+    const fi=spell.slots.findIndex(s=>!s.fixed&&!s.space&&!s.val);
+    if(fi>=0){ spell.slots[fi].val=spell.answer[fi]; spell.slots[fi].filled=true; advanceCursor(); drawSlots(); checkSpellDone(it); }
+  };
+  drawSlots();
+  buildKeyboard(true);
+  focusHidden();
+  speak(it.word);
+}
+
+function drawSlots(){
+  const wrap=$("slots"); wrap.innerHTML="";
+  spell.slots.forEach((s,i)=>{
+    const d=document.createElement("div");
+    if(s.space){ d.className="slot space"; wrap.appendChild(d); return; }
+    d.className="slot"+(s.fixed?" fixed":"")+(s.filled?" filled":"")+(i===spell.cursor?" cursor":"");
+    d.textContent = s.fixed? s.ch : (s.val||"");
+    wrap.appendChild(d);
+  });
+  // 高亮下一个该敲的键
+  const cur=spell.slots[spell.cursor];
+  highlightKey(cur?cur.ch:null);
+}
+
+function advanceCursor(){
+  let i=spell.cursor+1;
+  while(i<spell.slots.length && (spell.slots[i].fixed||spell.slots[i].space)) i++;
+  spell.cursor = (i<spell.slots.length)? i : -1;
+}
+
+function handleLetter(ch){
+  if(!spell || !game || game.attempted) return;
+  if(spell.cursor<0) return;
+  const cur=spell.slots[spell.cursor];
+  if(!cur || cur.fixed || cur.space) return;
+  const good = ch.toLowerCase()===cur.ch.toLowerCase();
+  keyFeedback(ch, good);
+  cur.val=ch.toLowerCase(); cur.filled=true;
+  advanceCursor();
+  drawSlots();
+  if(game.mode==="cloze") syncBlank();
+  checkSpellDone(game.queue[game.idx]);
+}
+function handleBackspace(){
+  if(!spell || game.attempted) return;
+  // 回退到上一个可填格
+  let i = spell.cursor<0? spell.slots.length-1 : spell.cursor-1;
+  while(i>=0 && (spell.slots[i].fixed||spell.slots[i].space)) i--;
+  if(i>=0){ spell.slots[i].val=""; spell.slots[i].filled=false; spell.cursor=i; drawSlots(); if(game.mode==="cloze") syncBlank(); }
+}
+function checkSpellDone(it){
+  const allFilled=spell.slots.every(s=>s.fixed||s.space||s.val);
+  if(!allFilled) return;
+  const typed=spell.slots.map(s=> s.space?" ":(s.fixed?s.ch:s.val)).join("");
+  judge(it, typed===spell.answer);
+}
+
+/* =========================================================
+   模式 ③ 看词选意思 / ④ 看意思选词
+   ========================================================= */
+function buildOptions(it, key){
+  // key = "meaning" 或 "word";干扰项取自整个作用域
+  const pool=scopeItems().filter(x=>x[key] && x[key]!==it[key] && (x.type==="word"||x.type==="phrase"));
+  const distract=shuffle(pool).slice(0,3).map(x=>x[key]);
+  const opts=shuffle([it[key], ...distract]);
+  // 不足 4 个也可
+  return opts;
+}
+function renderMean1(it){ // 看英文,选中文
+  const opts=buildOptions(it,"meaning");
+  drawChoice(it, it.word, it.ipa, opts, it.meaning, true);
+}
+function renderMean2(it){ // 看中文,选英文
+  const opts=buildOptions(it,"word");
+  drawChoice(it, it.meaning, "", opts, it.word, false);
+}
+function drawChoice(it, promptText, ipa, opts, answer, speakIt){
+  const card=$("gameCard");
+  card.innerHTML=`
+    <div class="prompt-cn">${promptText}</div>
+    ${ipa?`<div class="prompt-ipa">${ipa}</div>`:""}
+    ${speakIt?'<button class="btn small speakbtn" id="spk">🔊 听发音</button>':''}
+    <div class="options" id="opts"></div>
+    <p class="hint">用键盘按 1 / 2 / 3 / 4 选择</p>`;
+  if(speakIt){ $("spk").onclick=()=>speak(it.word); speak(it.word); }
+  const wrap=$("opts");
+  opts.forEach((o,i)=>{
+    const d=document.createElement("div"); d.className="option"; d.dataset.val=o;
+    d.innerHTML=`<span class="num">${i+1}</span><span>${o}</span>`;
+    d.onclick=()=>chooseOption(it, d, o===answer, answer);
+    wrap.appendChild(d);
+  });
+  buildKeyboard(false);
+  game._opts={answer, nodes:[...wrap.children]};
+}
+function chooseOption(it, node, isRight, answer){
+  if(game.attempted) return;
+  node.classList.add(isRight?"right":"wrong");
+  if(!isRight){ // 标出正确答案
+    game._opts.nodes.forEach(n=>{ if(n.dataset.val===answer) n.classList.add("right"); });
+  }
+  judge(it, isRight);
+}
+
+/* =========================================================
+   模式 ⑤ 完形填空 — 句中敲词
+   ========================================================= */
+function renderCloze(it){
+  // 用例句;挖掉目标词(it.word 的核心)
+  const sentence=it.example;
+  const target=it.word.toLowerCase();
+  // 找到句中目标词的位置(忽略大小写,整词)
+  const re=new RegExp("\\b"+escapeReg(target)+"\\b","i");
+  let display=sentence, found=re.test(sentence);
+  let answer=target;
+  if(!found){
+    // 例句里没有原词时,退化为默写该词(挖整词)
+    display=sentence; answer=target;
+  }
+  spell={answer, slots:answer.split("").map(c=> c===" "?{ch:" ",space:true}:{ch:c,fixed:false,filled:false,val:""}),
+         cursor:0};
+  spell.cursor=firstBlank(spell.slots);
+
+  const card=$("gameCard");
+  const blanked = found? sentence.replace(re,'<span class="blank" id="blankSpot">____</span>')
+                       : sentence+' <span class="blank" id="blankSpot">____</span>';
+  card.innerHTML=`
+    <div class="sentence">${blanked}</div>
+    ${it.exampleMeaning?`<div class="prompt-cn" style="font-size:18px;color:var(--muted)">${it.exampleMeaning}</div>`:""}
+    <div class="prompt-ipa">提示:${it.meaning}</div>
+    <button class="btn small speakbtn" id="spk">🔊 听整句</button>
+    <div class="slots" id="slots"></div>`;
+  $("spk").onclick=()=>speak(sentence);
+  drawClozeSlots();
+  buildKeyboard(true);
+  focusHidden();
+  speak(sentence);
+}
+function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function drawClozeSlots(){
+  drawSlots();
+  // 同步更新句中空格显示
+  const spot=$("blankSpot");
+  if(spot){ const typed=spell.slots.map(s=>s.space?" ":(s.val||"_")).join(""); spot.textContent=typed; }
+}
+// 复用 handleLetter / checkSpellDone:cloze 下输入会同步更新句中空格(见 handleLetter)
+
+/* =========================================================
+   键盘事件(物理键盘)
+   ========================================================= */
+function focusHidden(){ const h=$("hiddenInput"); if(h){ h.value=""; setTimeout(()=>h.focus(),50); } }
+
+document.addEventListener("keydown",(e)=>{
+  if(!$("screen-game").classList.contains("active")) return;
+  if(!game || game.attempted) return;
+  const k=e.key;
+  // 选择题:数字键
+  if((game.mode==="mean1"||game.mode==="mean2") && /^[1-4]$/.test(k)){
+    const idx=parseInt(k,10)-1; const nodes=game._opts?game._opts.nodes:[];
+    if(nodes[idx]){ e.preventDefault(); nodes[idx].click(); }
+    return;
+  }
+  // 拼写/完形:字母与退格
+  if(game.mode==="spell1"||game.mode==="spell2"||game.mode==="cloze"){
+    if(/^[a-zA-Z]$/.test(k)){ e.preventDefault(); handleLetter(k); }
+    else if(k==="Backspace"){ e.preventDefault(); handleBackspace(); }
+  }
+});
+function syncBlank(){ const spot=$("blankSpot"); if(spot&&spell){ const typed=spell.slots.map(s=>s.space?" ":(s.val||"_")).join(""); spot.textContent=typed; } }
+
+/* =========================================================
+   结算
+   ========================================================= */
+function finishGame(){
+  const total=game.queue.length;
+  const correct=game.correct;
+  const secs=Math.round((Date.now()-game.startTs)/1000);
+  const ratio=correct/total;
+  let stars = ratio>=1?3 : ratio>=0.7?2 : ratio>=0.4?1 : 0;
+  // 记录最佳星数(按作用域)
+  if(!game.fromWrong){
+    const pid=scopeProgressId();
+    const p=store.progress[pid]||{stars:0};
+    p.stars=Math.max(p.stars||0, stars); store.progress[pid]=p; saveStore();
+  }
+  $("resultEmoji").textContent = stars===3?"🏆": stars>=1?"🎉":"💪";
+  $("resultStars").textContent = "⭐".repeat(stars)+"☆".repeat(3-stars);
+  $("resultScore").textContent = `答对 ${correct} / ${total} 题`;
+  $("resultTime").textContent = `用时 ${secs} 秒`;
+  const wrongNow=scopeWrong().length;
+  $("resultWrong").textContent = `📒 ${scope.kind==="total"?"总库":"本子库"}错题本现有 ${wrongNow} 题`;
+  $("againBtn").onclick=()=>startGame(game.mode, game.fromWrong);
+  show("result");
+}
+
+/* =========================================================
+   备份导入导出 / 词库管理
+   ========================================================= */
+function exportBackup(){
+  const blob=new Blob([JSON.stringify(store,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="单词闯关备份.json";
+  a.click();
+  toast("已导出备份 📤");
+}
+function importBackup(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const data=JSON.parse(r.result);
+      if(data.banks){ store=data; saveStore(); renderBanks(); toast("备份已导入 ✅"); }
+      else toast("这不是备份文件 😕");
+    }catch(e){ toast("文件读取失败 😕"); }
+  };
+  r.readAsText(file);
+}
+function manageBanks(){
+  const ids=Object.keys(store.banks);
+  if(ids.length===0){ toast("还没有词库"); return; }
+  const name=prompt("输入要删除的词库完整名称(留空取消)。\n现有词库:\n"+ids.join("\n"));
+  if(name && store.banks[name]){
+    delete store.banks[name]; delete store.progress[name]; delete store.wrong[name];
+    saveStore(); renderBanks(); toast("已删除:"+name);
+  } else if(name){ toast("没找到这个词库"); }
+}
+
+/* =========================================================
+   事件绑定 & 启动
+   ========================================================= */
+
+$("importBackup").addEventListener("change",(e)=>{ if(e.target.files[0]) importBackup(e.target.files[0]); e.target.value=""; });
+$("exportBackup").onclick=exportBackup;
+
+$("practiceWrong").onclick=()=>{
+  // 错题练习:在作用域错题里挑一个有题的模式开练
+  const wrongItems=scopeWrongItems();
+  if(wrongItems.length===0){ toast("错题本是空的,继续闯关收集错题吧 🙂"); return; }
+  const modesToTry=["spell1","spell2","cloze","mean1","mean2"];
+  for(const m of modesToTry){
+    if(wrongItems.some(it=>isItemUsable(m,it))){ startGame(m,true); return; }
+  }
+  toast("错题本里没有适合的题型 🙂");
+};
+document.querySelectorAll("[data-go]").forEach(b=> b.onclick=()=>show(b.dataset.go));
+
+function isItemUsable(mode,it){
+  if(mode==="spell1"||mode==="spell2") return it.type==="word"||(it.type==="phrase"&&!it.word.includes(" "));
+  if(mode==="mean1"||mode==="mean2") return (it.type==="word"||it.type==="phrase")&&it.meaning;
+  if(mode==="cloze") return it.example && it.example.split(" ").length>=2;
+  return true;
+}
+
+// 启动:注入内嵌四年级词库(幂等——已存在则刷新内容,保留进度与错题),再渲染
+EMBEDDED_BANKS.forEach(b=>{
+  const id=bankId(b.meta);
+  store.banks[id]={ meta:b.meta, items:b.items };
+  if(!store.progress[id]) store.progress[id]={stars:0};
+  if(!store.wrong[id]) store.wrong[id]=[];
+});
+saveStore();
+renderBanks();
+
+// 调试钩子(便于自动化测试查看内部状态;对正常使用无副作用)
+window._wrt = { getGame:()=>game, getSpell:()=>spell, addBank, startGame, enterBank, enterTotal,
+                store:()=>store, getScope:()=>scope };
+</script>
+</body>
+</html>
