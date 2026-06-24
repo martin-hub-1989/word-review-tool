@@ -244,6 +244,7 @@
         <option value="5">5 题</option>
         <option value="10" selected>10 题</option>
         <option value="15">15 题</option>
+        <option value="0">全部(考前查缺补漏)</option>
       </select>
       <div class="btn-row" style="margin-top:12px;justify-content:flex-start;align-items:center;gap:10px">
         <button class="btn gray small" id="hintToggle">💡 字母提示：关</button>
@@ -632,7 +633,8 @@ function eligibleItems(mode){
 let game=null; // {mode, queue:[], idx, correct, startTs, qStartTs, fromWrong}
 
 function startGame(mode, fromWrong){
-  const qcount=parseInt($("qcount").value,10);
+  const raw=$("qcount").value;
+  const wantAll=(raw==="0"); // 0 = 全部单词(考前查缺补漏,每个词各一次)
   let pool;
   if(fromWrong){
     pool=scopeWrongItems().filter(it=>isItemUsable(mode,it));
@@ -641,7 +643,10 @@ function startGame(mode, fromWrong){
     pool=eligibleItems(mode);
     if(pool.length===0){ toast("这个词库没有适合该模式的内容 🙂"); return; }
   }
-  const n=Math.min(qcount, Math.max(pool.length, 3));
+  // 题数:"全部"取满池(每词各一次,不重复);否则按所选数(不足允许重复)
+  let n;
+  if(wantAll) n=pool.length;
+  else n=Math.min(parseInt(raw,10), Math.max(pool.length, 3));
   // 题目数量不足时允许重复
   let queue=shuffle(pool);
   while(queue.length<n) queue=queue.concat(shuffle(pool));
@@ -774,6 +779,7 @@ function highlightKey(ch){
   if(k) k.classList.add("hl");
 }
 function keyFeedback(ch, good){
+  if(!store.hintOn) return; // 闯关模式连对错颜色都不给,纯考记忆(避免错字母变红变相提示)
   const k=document.querySelector('.key[data-k="'+ch.toLowerCase()+'"]');
   if(!k) return;
   k.classList.add(good?"good":"bad");

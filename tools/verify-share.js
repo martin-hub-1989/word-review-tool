@@ -72,5 +72,11 @@ const clozeIpa = /it\.ipa\?\(. ?\+it\.ipa\):/.test(code);
 !spellIpa ? pass('拼写模块音标已移除') : fail('拼写仍显示音标');
 !clozeIpa ? pass('完形填空音标已移除') : fail('完形仍显示音标');
 
+// 9. 错字母反馈门控 + 全部题数(本次新增)
+/if\(!store\.hintOn\) return;/.test(code) ? pass('keyFeedback 门控:闯关不逐字反馈(防错字母变红)') : fail('keyFeedback 未门控——错字母会变红泄漏');
+/value="0">全部/.test(html) ? pass('题数有「全部」选项(value=0)') : fail('缺全部选项');
+/wantAll=\(raw==="0"\)/.test(code) ? pass('startGame 识别全部(wantAll)') : fail('startGame 未处理全部');
+/if\(wantAll\) n=pool\.length/.test(code) ? pass('全部:取满池 n=pool.length(每词各一次)') : fail('全部未取满池');
+
 console.log(ok ? '\n✅ 全部通过 —— 可分享' : '\n❌ 有问题见上,勿分享');
 process.exit(ok ? 0 : 1);
