@@ -351,11 +351,28 @@ const EMBEDDED_BANKS = [{"meta":{"child":"哥哥","title":"四下 Unit 1-2 Peopl
 let store = loadStore();
 
 function loadStore(){
+  // 兜底默认值:每个字段都先有,避免旧版本写入的 store 缺字段时后续代码崩溃
+  const def = { banks:{}, progress:{}, wrong:{}, timing:{}, hintOn:false, correctTotal:{}, iceCream:{} };
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if(raw) return JSON.parse(raw);
+    if(raw){
+      const s = JSON.parse(raw);
+      // 字段补全(migration):旧版 store 可能缺 correctTotal/iceCream 等,
+      // banks 若为 null 也修回对象,否则 EMBEDDED_BANKS 注入会抛 "Cannot set properties of null"
+      return {
+        banks: (s.banks && typeof s.banks==="object") ? s.banks : def.banks,
+        progress: s.progress || def.progress,
+        wrong: s.wrong || def.wrong,
+        timing: s.timing || def.timing,
+        hintOn: typeof s.hintOn==="boolean" ? s.hintOn : def.hintOn,
+        correctTotal: (s.correctTotal && typeof s.correctTotal==="object") ? s.correctTotal : def.correctTotal,
+        iceCream: (s.iceCream && typeof s.iceCream==="object") ? s.iceCream : def.iceCream,
+        identity: (typeof s.identity==="string") ? s.identity : null,
+        photo: (typeof s.photo==="string") ? s.photo : null,
+      };
+    }
   } catch(e){}
-  return { banks:{}, progress:{}, wrong:{}, timing:{}, hintOn:false, correctTotal:{}, iceCream:{} };
+  return def;
 }
 function saveStore(){ localStorage.setItem(LS_KEY, JSON.stringify(store)); }
 
@@ -415,7 +432,10 @@ function renderBanks(){
   hdr.innerHTML='👦 '+identity+(ic>0?' <span style="font-size:20px">'+'🍦'.repeat(ic)+'</span>':'');
   list.appendChild(hdr);
   // 筛选该身份下的子库
-  const ids=Object.keys(store.banks).filter(id=>(store.banks[id].meta.child||"未分组")===identity);
+  const ids=Object.keys(store.banks).filter(id=>{
+    const b=store.banks[id];
+    return b && b.meta && b.items; // 跳过损坏条目(无 meta/items),避免后续 .meta.child 崩溃
+  }).filter(id=>(store.banks[id].meta.child||"未分组")===identity);
   if(ids.length===0){
     list.innerHTML='<p class="empty">还没有词库,点右上角"＋ 加载词库"添加吧!</p>';
     show("home");
@@ -517,7 +537,10 @@ function enterBank(id){
 }
 /* 进入某个孩子的总库(名下所有子库合并) */
 function enterTotal(child){
-  const ids=Object.keys(store.banks).filter(id=>(store.banks[id].meta.child||"未分组")===child);
+  const ids=Object.keys(store.banks).filter(id=>{
+    const b=store.banks[id];
+    return b && b.meta && b.items;
+  }).filter(id=>(store.banks[id].meta.child||"未分组")===child);
   enterScope({ kind:"total", child, title:"总库(全部子库)", bankIds:ids });
 }
 
