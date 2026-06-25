@@ -480,13 +480,19 @@ function enterIdentity(child){
   store.identity = child;
   saveStore();
   updateIceCreamDisplay();
-  // 等照片弹出动画播完再切换屏幕
-  setTimeout(()=>{ renderBanks(); }, 380);
+  // 等照片弹出动画播完再切换屏幕,同时移除 popping
+  // (popping 带 pointer-events:none 且动画 both 保持末帧,不清除会导致该卡片永久无法再点)
+  setTimeout(()=>{
+    if(card) card.classList.remove('popping');
+    renderBanks();
+  }, 380);
 }
 function switchIdentity(){
   store.identity = null;
   store.photo = null;
   saveStore();
+  // 回欢迎页前清除卡片 popping 状态,否则点过的卡片因 pointer-events:none 无法再选
+  document.querySelectorAll(".id-card").forEach(c=>c.classList.remove("popping"));
   show("welcome");
 }
 // 绑定欢迎页两张照片的点击
