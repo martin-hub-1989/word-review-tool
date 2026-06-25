@@ -24,6 +24,14 @@ const banks = bankFiles.map(f => JSON.parse(fs.readFileSync(path.join(dir, f), '
 const total = banks.reduce((n, b) => n + b.items.length, 0);
 console.log(`内嵌词库: ${banks.length} 个子库, 共 ${total} 条`);
 
+// 读取哥哥照片(游戏界面右上角用),先压缩再 base64
+const { execSync } = require('child_process');
+const gegeSrc = path.join(dir, '照片/哥哥.jpg');
+const gegeTmp = '/tmp/gege_300_build.jpg';
+if (!fs.existsSync(gegeTmp)) execSync('sips -Z 300 "' + gegeSrc + '" --out "' + gegeTmp + '"');
+const gegeB64 = fs.readFileSync(gegeTmp).toString('base64');
+console.log(`哥哥照片 base64: ${(gegeB64.length/1024).toFixed(0)}KB`);
+
 // 替换规则:每个 old 必须唯一命中,否则报错
 const reps = [
   // 1. LS key 改为分享版独立存储 + 内嵌词库数据
@@ -121,15 +129,16 @@ $("pdfConfirm").onclick=confirmPdfModal;`,
 
   // 9. 启动:固定哥哥身份 + 注入内嵌词库(幂等) + 渲染
   { desc: '启动注入+固定身份',
-    old: `// 启动:未选身份 → 欢迎页;已选身份 → 直接进对应词库首页
+    old: `updateIceCreamDisplay();
 if(store.identity){
   renderBanks();
 } else {
   show("welcome");
 }
 bindWelcomeCards();`,
-    new: `// 启动:四年级版固定哥哥身份,注入内嵌词库(幂等),再渲染
+    new: `// 启动:四年级版固定哥哥身份+照片,注入内嵌词库(幂等),再渲染
 store.identity="哥哥";
+store.photo="data:image/jpeg;base64,${gegeB64}";
 EMBEDDED_BANKS.forEach(b=>{
   const id=bankId(b.meta);
   store.banks[id]={ meta:b.meta, items:b.items };

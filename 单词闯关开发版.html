@@ -204,6 +204,18 @@
   .id-photo{width:150px;height:150px;border-radius:14px;object-fit:cover;display:block;margin:0 auto;}
   .id-name{font-size:24px;font-weight:800;margin:14px 0 4px;}
   .id-grade{font-size:15px;color:var(--muted);}
+  .ice-badge{display:inline-block;font-size:18px;margin-top:4px;min-height:24px;}
+  /* 屏幕切换动画 */
+  .screen{display:none;}
+  .screen.active{display:block;animation:fadeSlideIn .35s cubic-bezier(.4,0,.2,1) both;}
+  @keyframes fadeSlideIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+  /* 照片弹出特效 */
+  .id-card.popping{animation:popBurst .42s ease both;pointer-events:none;}
+  @keyframes popBurst{0%{transform:scale(1);}30%{transform:scale(1.18);}100%{transform:scale(.88);opacity:.3;}}
+  /* 游戏界面玩家照片 */
+  .game-photo{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--line);flex-shrink:0;}
+  /* 冰淇淋 toast */
+  #toast.icecream{background:var(--amber-soft);color:#9a6b16;font-size:17px;padding:14px 22px;max-width:340px;text-align:center;line-height:1.6;}
 </style>
 </head>
 <body>
@@ -219,11 +231,13 @@
           <img src="照片/哥哥.jpg" alt="哥哥" class="id-photo">
           <div class="id-name">哥哥</div>
           <div class="id-grade">四年级</div>
+          <div class="ice-badge" id="iceBadge-哥哥"></div>
         </div>
         <div class="id-card" data-child="弟弟">
           <img src="照片/弟弟.jpg" alt="弟弟" class="id-photo">
           <div class="id-name">弟弟</div>
           <div class="id-grade">一年级</div>
+          <div class="ice-badge" id="iceBadge-弟弟"></div>
         </div>
       </div>
     </div>
@@ -291,6 +305,7 @@
     <div class="topbar">
       <button class="btn gray small" data-go="mode">← 退出</button>
       <span class="crumbs" id="gameCrumbs"></span>
+      <img id="gamePhoto" class="game-photo" style="display:none" alt="">
     </div>
     <div class="qmeta"><span id="qProgress">第 1 / 10 题</span><span id="qScore">⭐ 0</span></div>
     <div class="progressbar"><div id="qbar"></div></div>
@@ -373,7 +388,7 @@ function loadStore(){
     const raw = localStorage.getItem(LS_KEY);
     if(raw) return JSON.parse(raw);
   } catch(e){}
-  return { banks:{}, progress:{}, wrong:{}, timing:{}, hintOn:false };
+  return { banks:{}, progress:{}, wrong:{}, timing:{}, hintOn:false, correctTotal:{}, iceCream:{} };
 }
 function saveStore(){ localStorage.setItem(LS_KEY, JSON.stringify(store)); }
 
@@ -382,7 +397,6 @@ function $(id){ return document.getElementById(id); }
 function show(screen){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   $("screen-"+screen).classList.add("active");
-  window.scrollTo(0,0);
 }
 function toast(msg){
   const t=$("toast"); t.textContent=msg; t.classList.add("show");
@@ -537,6 +551,13 @@ function renderBanks(){
   const sb=$("switchIdentityBtn"); if(sb) sb.onclick=switchIdentity;
 
   const list=$("bankList"); list.innerHTML="";
+  // 身份栏 + 冰淇淋
+  const hdr=document.createElement("div");
+  hdr.style.cssText="grid-column:1/-1;display:flex;align-items:center;gap:7px;font-size:18px;font-weight:800;margin-bottom:2px;";
+  const ic=store.iceCream[identity]||0;
+  hdr.innerHTML='👦 '+identity+(ic>0?' <span style="font-size:20px">'+'🍦'.repeat(ic)+'</span>':'');
+  list.appendChild(hdr);
+  // 筛选该身份下的子库
   const ids=Object.keys(store.banks).filter(id=>(store.banks[id].meta.child||"未分组")===identity);
   if(ids.length===0){
     list.innerHTML='<p class="empty">还没有词库,点右上角"＋ 加载词库"添加吧!</p>';
@@ -569,17 +590,27 @@ function renderBanks(){
     tile.onclick=()=>enterTotal(identity);
     list.appendChild(tile);
   }
+  updateIceCreamDisplay();
   show("home");
 }
 
 /* ---------- 身份选择 ---------- */
 function enterIdentity(child){
-  store.identity=child;
+  const card = document.querySelector('.id-card[data-child="'+child+'"]');
+  if(card){
+    card.classList.add('popping');
+    const img = card.querySelector('img');
+    if(img) store.photo = img.src;
+  }
+  store.identity = child;
   saveStore();
-  renderBanks();
+  updateIceCreamDisplay();
+  // 等照片弹出动画播完再切换屏幕
+  setTimeout(()=>{ renderBanks(); }, 380);
 }
 function switchIdentity(){
-  store.identity=null;
+  store.identity = null;
+  store.photo = null;
   saveStore();
   show("welcome");
 }
@@ -587,6 +618,25 @@ function switchIdentity(){
 function bindWelcomeCards(){
   document.querySelectorAll(".id-card").forEach(card=>{
     card.onclick=()=>enterIdentity(card.dataset.child);
+  });
+}
+
+/* ---------- 冰淇淋彩蛋 ---------- */
+function showIceCreamToast(id){
+  const name = id;
+  const count = store.iceCream[id] || 0;
+  const total = store.correctTotal[id] || 0;
+  const t = $("toast");
+  t.innerHTML = '🍦 '+name+'已累计答对 <b>'+total+'</b> 个单词！<br>兑换第 <b>'+count+'</b> 个冰淇淋名额！';
+  t.className = 'toast icecream show';
+  setTimeout(()=>{ t.className = 'toast'; }, 3200);
+}
+function updateIceCreamDisplay(){
+  ['哥哥','弟弟'].forEach(child=>{
+    const badge = document.getElementById('iceBadge-'+child);
+    if(!badge) return;
+    const ic = store.iceCream[child] || 0;
+    badge.textContent = ic > 0 ? '🍦'.repeat(ic) : '';
   });
 }
 
@@ -706,6 +756,10 @@ function startGame(mode, fromWrong){
 
   game={ mode, queue, idx:0, correct:0, fromWrong,
          startTs:Date.now(), qStartTs:0, attempted:false };
+  // 右上角显示当前玩家照片
+  const gp=$("gamePhoto");
+  if(gp && store.photo){ gp.src=store.photo; gp.style.display=""; }
+  else if(gp) gp.style.display="none";
   $("gameCrumbs").textContent=(fromWrong?"📒 错题练习 · ":"")+(scope.kind==="total"?"总库 · ":"")+modeTitle(mode);
   show("game");
   nextQuestion();
@@ -741,6 +795,18 @@ function judge(it, isRight){
 
   if(isRight && !slow){
     game.correct++;
+    // 冰淇淋彩蛋:累计答对(跨会话,按身份)
+    const id = store.identity;
+    if(id){
+      store.correctTotal[id] = (store.correctTotal[id] || 0) + 1;
+      const ct = store.correctTotal[id];
+      const ic = store.iceCream[id] || 0;
+      if(ct % 50 === 0 && ic < Math.floor(ct / 50) && ic < 5){
+        store.iceCream[id] = Math.min(Math.floor(ct / 50), 5);
+        updateIceCreamDisplay();
+        setTimeout(()=>showIceCreamToast(id), 300);
+      }
+    }
     // 错题本中:连续答对 +1,够 3 次毕业
     if(game.fromWrong) bumpWrongStreak(bid, key, true);
     else if(isInWrong(bid, key)) bumpWrongStreak(bid, key, true);
@@ -1167,6 +1233,7 @@ function isItemUsable(mode,it){
 }
 
 // 启动:未选身份 → 欢迎页;已选身份 → 直接进对应词库首页
+updateIceCreamDisplay();
 if(store.identity){
   renderBanks();
 } else {

@@ -55,7 +55,7 @@ pass('已删元素无残留引用');
 
 // 6. 字母提示开关逻辑(本次新增)
 const code = blocks.map(b => b.code).join('\n');
-/timing:\{\}, hintOn:false \}/.test(code) ? pass('store 默认 hintOn:false') : fail('store 缺 hintOn 默认值');
+/hintOn:false/.test(code) ? pass('store 默认 hintOn:false') : fail('store 缺 hintOn 默认值');
 /if\(!store\.hintOn \|\| !ch\) return;/.test(code) ? pass('highlightKey 门控(防御式): 先清高亮, hintOn 关时不点亮') : fail('highlightKey 缺门控');
 /id="hintToggle"/.test(html) ? pass('模式页有字母提示开关按钮') : fail('缺 hintToggle 按钮');
 /\$\("hintToggle"\)\.onclick/.test(code) ? pass('hintToggle 已绑定') : fail('hintToggle 未绑定');
@@ -77,6 +77,15 @@ const clozeIpa = /it\.ipa\?\(. ?\+it\.ipa\):/.test(code);
 /value="0">全部/.test(html) ? pass('题数有「全部」选项(value=0)') : fail('缺全部选项');
 /wantAll=\(raw==="0"\)/.test(code) ? pass('startGame 识别全部(wantAll)') : fail('startGame 未处理全部');
 /if\(wantAll\) n=pool\.length/.test(code) ? pass('全部:取满池 n=pool.length(每词各一次)') : fail('全部未取满池');
+
+// 10. 新功能:游戏照片 + 冰淇淋彩蛋 + 备份(本次新增)
+/id="gamePhoto"/.test(html) ? pass('游戏界面有玩家照片元素') : fail('缺 gamePhoto');
+/store\.photo/.test(code) ? pass('store.photo 已设置(四年级版启动注入)') : fail('缺 store.photo');
+/correctTotal/.test(code) ? pass('store.correctTotal 冰淇淋累计字段') : fail('缺 correctTotal');
+/iceCream/.test(code) ? pass('store.iceCream 冰淇淋名额字段') : fail('缺 iceCream');
+/showIceCreamToast/.test(code) ? pass('showIceCreamToast 函数在') : fail('缺 showIceCreamToast');
+/updateIceCreamDisplay/.test(code) ? pass('updateIceCreamDisplay 函数在') : fail('缺 updateIceCreamDisplay');
+/fadeSlideIn/.test(html) ? pass('屏幕切换动画存在') : fail('缺屏幕动画');
 
 console.log(ok ? '\n✅ 全部通过 —— 可分享' : '\n❌ 有问题见上,勿分享');
 process.exit(ok ? 0 : 1);

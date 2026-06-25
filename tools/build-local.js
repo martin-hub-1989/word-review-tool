@@ -135,7 +135,7 @@ $("pdfConfirm").onclick=confirmPdfModal;`,
 
   // 10. 启动:注入内嵌词库(幂等) → 在 renderBanks 调用之前插入
   { desc: '启动注入',
-    old: `// 启动:未选身份 → 欢迎页;已选身份 → 直接进对应词库首页
+    old: `updateIceCreamDisplay();
 if(store.identity){
   renderBanks();
 } else {
@@ -143,6 +143,7 @@ if(store.identity){
 }
 bindWelcomeCards();`,
     new: `// 启动:注入内嵌全部词库(幂等),再按身份状态决定进欢迎页还是首页
+updateIceCreamDisplay();
 EMBEDDED_BANKS.forEach(b=>{
   const id=bankId(b.meta);
   store.banks[id]={ meta:b.meta, items:b.items };
