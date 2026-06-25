@@ -1,0 +1,37 @@
+{
+  "meta": {
+    "child": "弟弟",
+    "title": "一下·人物方位与数字",
+    "grade": 1
+  },
+  "items": [
+    { "word": "he", "meaning": "他", "ipa": "/hiː/", "type": "word", "example": "He is my friend.", "exampleMeaning": "他是我的朋友。" },
+    { "word": "she", "meaning": "她", "ipa": "/ʃiː/", "type": "word", "example": "She is a girl.", "exampleMeaning": "她是一个女孩。" },
+    { "word": "doctor", "meaning": "医生", "ipa": "/ˈdɒktə(r)/", "type": "word", "example": "The doctor is nice.", "exampleMeaning": "这位医生很和蔼。" },
+    { "word": "nurse", "meaning": "护士", "ipa": "/nɜːs/", "type": "word", "example": "The nurse helps me.", "exampleMeaning": "护士帮助我。" },
+    { "word": "driver", "meaning": "司机", "ipa": "/ˈdraɪvə(r)/", "type": "word", "example": "My dad is a driver.", "exampleMeaning": "我爸爸是司机。" },
+    { "word": "policeman", "meaning": "警察", "ipa": "/pəˈliːsmən/", "type": "word", "example": "The policeman helps us.", "exampleMeaning": "警察帮助我们。" },
+    { "word": "pupil", "meaning": "学生", "ipa": "/ˈpjuːpl/", "type": "word", "example": "I am a pupil.", "exampleMeaning": "我是一名学生。" },
+    { "word": "me", "meaning": "我（宾格）", "ipa": "/miː/", "type": "word", "example": "Look at me!", "exampleMeaning": "看着我！" },
+    { "word": "he's", "meaning": "他是", "ipa": "/hiːz/", "type": "word", "example": "He's a doctor.", "exampleMeaning": "他是一名医生。" },
+    { "word": "she's", "meaning": "她是", "ipa": "/ʃiːz/", "type": "word", "example": "She's a nurse.", "exampleMeaning": "她是一名护士。" },
+    { "word": "where", "meaning": "哪里", "ipa": "/weə(r)/", "type": "word", "example": "Where is my hat?", "exampleMeaning": "我的帽子在哪里？" },
+    { "word": "where's", "meaning": "在哪里", "ipa": "/weəz/", "type": "word", "example": "Where's the cat?", "exampleMeaning": "猫在哪里？" },
+    { "word": "in", "meaning": "在……里面", "ipa": "/ɪn/", "type": "word", "example": "The toy is in the box.", "exampleMeaning": "玩具在盒子里。" },
+    { "word": "on", "meaning": "在……上面", "ipa": "/ɒn/", "type": "word", "example": "The hat is on the bed.", "exampleMeaning": "帽子在床上。" },
+    { "word": "under", "meaning": "在……下面", "ipa": "/ˈʌndə(r)/", "type": "word", "example": "The cat is under the bed.", "exampleMeaning": "猫在床下面。" },
+    { "word": "hat", "meaning": "帽子", "ipa": "/hæt/", "type": "word", "example": "I have a red hat.", "exampleMeaning": "我有一顶红帽子。" },
+    { "word": "toy", "meaning": "玩具", "ipa": "/tɔɪ/", "type": "word", "example": "This is my toy.", "exampleMeaning": "这是我的玩具。" },
+    { "word": "bed", "meaning": "床", "ipa": "/bed/", "type": "word", "example": "I go to bed.", "exampleMeaning": "我上床睡觉。" },
+    { "word": "bear", "meaning": "熊", "ipa": "/beə(r)/", "type": "word", "example": "The bear is big.", "exampleMeaning": "这只熊很大。" },
+    { "word": "look at", "meaning": "看", "ipa": "/lʊk æt/", "type": "phrase", "example": "Look at the bird!", "exampleMeaning": "看那只鸟！" },
+    { "word": "eleven", "meaning": "十一", "ipa": "/ɪˈlevn/", "type": "word", "example": "I am eleven.", "exampleMeaning": "我十一岁。" },
+    { "word": "twelve", "meaning": "十二", "ipa": "/twelv/", "type": "word", "example": "She is twelve.", "exampleMeaning": "她十二岁。" },
+    { "word": "fish", "meaning": "鱼", "ipa": "/fɪʃ/", "type": "word", "example": "The fish can swim.", "exampleMeaning": "鱼会游泳。" },
+    { "word": "tree", "meaning": "树", "ipa": "/triː/", "type": "word", "example": "The tree is tall.", "exampleMeaning": "这棵树很高。" },
+    { "word": "other", "meaning": "其他的", "ipa": "/ˈʌðə(r)/", "type": "word", "example": "I like the other one.", "exampleMeaning": "我喜欢另一个。" },
+    { "word": "know", "meaning": "知道", "ipa": "/nəʊ/", "type": "word", "example": "I know this word.", "exampleMeaning": "我认识这个单词。" },
+    { "word": "don't", "meaning": "不", "ipa": "/dəʊnt/", "type": "word", "example": "Don't run!", "exampleMeaning": "别跑！" },
+    { "word": "let's", "meaning": "让我们", "ipa": "/lets/", "type": "word", "example": "Let's go to school.", "exampleMeaning": "我们去上学吧。" }
+  ]
+}

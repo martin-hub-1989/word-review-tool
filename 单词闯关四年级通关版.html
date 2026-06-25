@@ -192,10 +192,42 @@
            line-height:1.7;padding:12px;border-radius:12px;border:1.5px solid var(--line);
            background:var(--paper);color:var(--ink);resize:vertical;}
   #pdfText:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+  /* 欢迎页 — 选身份 */
+  #screen-welcome{display:flex;align-items:center;justify-content:center;min-height:100vh;}
+  .welcome-wrap{text-align:center;padding:40px 20px;max-width:500px;}
+  .welcome-wrap h1{font-size:32px;margin:0 0 8px;}
+  .welcome-sub{font-size:17px;color:var(--muted);margin:0 0 36px;}
+  .identity-cards{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;}
+  .id-card{cursor:pointer;border-radius:18px;padding:22px 28px;background:var(--paper);box-shadow:0 2px 16px rgba(0,0,0,.07);transition:transform .2s,box-shadow .2s;user-select:none;}
+  .id-card:hover{transform:translateY(-5px);box-shadow:0 10px 28px rgba(0,0,0,.13);}
+  .id-card:active{transform:scale(.97);}
+  .id-photo{width:150px;height:150px;border-radius:14px;object-fit:cover;display:block;margin:0 auto;}
+  .id-name{font-size:24px;font-weight:800;margin:14px 0 4px;}
+  .id-grade{font-size:15px;color:var(--muted);}
 </style>
 </head>
 <body>
 <div id="app">
+
+  <!-- WELCOME — 选身份 -->
+  <section id="screen-welcome" class="screen active">
+    <div class="welcome-wrap">
+      <h1>🎒 单词闯关乐园</h1>
+      <p class="welcome-sub">谁要来闯关？点一下头像吧！</p>
+      <div class="identity-cards">
+        <div class="id-card" data-child="哥哥">
+          <img src="照片/哥哥.jpg" alt="哥哥" class="id-photo">
+          <div class="id-name">哥哥</div>
+          <div class="id-grade">四年级</div>
+        </div>
+        <div class="id-card" data-child="弟弟">
+          <img src="照片/弟弟.jpg" alt="弟弟" class="id-photo">
+          <div class="id-name">弟弟</div>
+          <div class="id-grade">一年级</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- HOME -->
   <section id="screen-home" class="screen active">
@@ -300,7 +332,7 @@ const EMBEDDED_BANKS = [{"meta":{"child":"哥哥","title":"四下 Unit 1-2 Peopl
 
 /* ---------- 持久化数据 ---------- */
 // store = { banks:{id:{meta,items}}, progress:{bankId:{stars}}, wrong:{bankId:[{key,streak}]},
-//           timing:{mode:{n,mean,m2}} }   // m2 用于在线方差(Welford)
+//           timing:{mode:{n,mean,m2}}, identity:"哥哥"|"弟弟"|null }
 let store = loadStore();
 
 function loadStore(){
@@ -355,44 +387,63 @@ function addBank(data){
 }
 
 function renderBanks(){
+  const identity=store.identity;
+  // 未选身份 → 去欢迎页
+  if(!identity){ show("welcome"); return; }
+  // 更新首页"切换"按钮
+  const sb=$("switchIdentityBtn"); if(sb) sb.onclick=switchIdentity;
+
   const list=$("bankList"); list.innerHTML="";
-  const ids=Object.keys(store.banks);
-  if(ids.length===0){ list.innerHTML='<p class="empty">还没有词库,点右上角"➕ 加载词库"添加吧!</p>'; return; }
-  // 按孩子分组
-  const byChild={};
-  ids.forEach(id=>{ const c=store.banks[id].meta.child||"未分组"; (byChild[c]=byChild[c]||[]).push(id); });
-  Object.keys(byChild).forEach(child=>{
-    const head=document.createElement("div");
-    head.style.cssText="grid-column:1/-1;font-weight:800;color:var(--muted);margin-top:6px;font-size:14px;";
-    head.textContent="👦 "+child;
-    list.appendChild(head);
-    // 该孩子名下子库
-    byChild[child].forEach(id=>{
-      const b=store.banks[id]; const stars=(store.progress[id]||{}).stars||0;
-      const wrong=(store.wrong[id]||[]).length;
-      const tile=document.createElement("div");
-      tile.className="tile";
-      tile.innerHTML=`<span class="emoji">📗</span>
-        <div class="t-title">${b.meta.title}</div>
-        <div class="t-sub">${b.items.length} 个条目 · ${b.meta.grade?('年级 '+b.meta.grade):''}</div>
-        <div class="badge">⭐ ${stars}${wrong?(' · 📒 '+wrong):''}</div>`;
-      tile.onclick=()=>enterBank(id);
-      list.appendChild(tile);
-    });
-    // 总库卡片(名下所有子库合并)。仅当有 2 个及以上子库时才显示,单子库无意义
-    if(byChild[child].length>=2){
-      const totItems=byChild[child].reduce((n,id)=>n+store.banks[id].items.length,0);
-      const totWrong=byChild[child].reduce((n,id)=>n+(store.wrong[id]||[]).length,0);
-      const tstars=(store.progress["__total__::"+child]||{}).stars||0;
-      const tile=document.createElement("div");
-      tile.className="tile tile-total";
-      tile.innerHTML=`<span class="emoji">📚</span>
-        <div class="t-title">总库</div>
-        <div class="t-sub">${byChild[child].length} 个子库 · ${totItems} 个条目</div>
-        <div class="badge">⭐ ${tstars}${totWrong?(' · 📒 '+totWrong):''}</div>`;
-      tile.onclick=()=>enterTotal(child);
-      list.appendChild(tile);
-    }
+  const ids=Object.keys(store.banks).filter(id=>(store.banks[id].meta.child||"未分组")===identity);
+  if(ids.length===0){
+    list.innerHTML='<p class="empty">还没有词库,点右上角"＋ 加载词库"添加吧!</p>';
+    show("home");
+    return;
+  }
+  ids.forEach(id=>{
+    const b=store.banks[id]; const stars=(store.progress[id]||{}).stars||0;
+    const wrong=(store.wrong[id]||[]).length;
+    const tile=document.createElement("div");
+    tile.className="tile";
+    tile.innerHTML=`<span class="emoji">📗</span>
+      <div class="t-title">${b.meta.title}</div>
+      <div class="t-sub">${b.items.length} 个条目 · ${b.meta.grade?('年级 '+b.meta.grade):''}</div>
+      <div class="badge">⭐ ${stars}${wrong?(' · 📒 '+wrong):''}</div>`;
+    tile.onclick=()=>enterBank(id);
+    list.appendChild(tile);
+  });
+  // 总库卡片(名下所有子库合并)。仅当有 2 个及以上子库时才显示
+  if(ids.length>=2){
+    const totItems=ids.reduce((n,id)=>n+store.banks[id].items.length,0);
+    const totWrong=ids.reduce((n,id)=>n+(store.wrong[id]||[]).length,0);
+    const tstars=(store.progress["__total__::"+identity]||{}).stars||0;
+    const tile=document.createElement("div");
+    tile.className="tile tile-total";
+    tile.innerHTML=`<span class="emoji">📚</span>
+      <div class="t-title">总库</div>
+      <div class="t-sub">${ids.length} 个子库 · ${totItems} 个条目</div>
+      <div class="badge">⭐ ${tstars}${totWrong?(' · 📒 '+totWrong):''}</div>`;
+    tile.onclick=()=>enterTotal(identity);
+    list.appendChild(tile);
+  }
+  show("home");
+}
+
+/* ---------- 身份选择 ---------- */
+function enterIdentity(child){
+  store.identity=child;
+  saveStore();
+  renderBanks();
+}
+function switchIdentity(){
+  store.identity=null;
+  saveStore();
+  show("welcome");
+}
+// 绑定欢迎页两张照片的点击
+function bindWelcomeCards(){
+  document.querySelectorAll(".id-card").forEach(card=>{
+    card.onclick=()=>enterIdentity(card.dataset.child);
   });
 }
 
@@ -958,7 +1009,8 @@ function isItemUsable(mode,it){
   return true;
 }
 
-// 启动:注入内嵌四年级词库(幂等——已存在则刷新内容,保留进度与错题),再渲染
+// 启动:四年级版固定哥哥身份,注入内嵌词库(幂等),再渲染
+store.identity="哥哥";
 EMBEDDED_BANKS.forEach(b=>{
   const id=bankId(b.meta);
   store.banks[id]={ meta:b.meta, items:b.items };

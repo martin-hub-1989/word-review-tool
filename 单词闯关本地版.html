@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>单词闯关乐园 🎮</title>
+<style>
+  :root {
+    /* 暖纸色调 · 收敛而和谐 */
+    --paper:#f7f4ef; --paper-2:#f1ece4;
+    --card:#fffdfa; --line:#ece5db;
+    --ink:#2b2a2e; --muted:#9b948c;
+    /* 主色:珊瑚 / 辅色:青绿 / 暖琥珀 / 雾紫 */
+    --primary:#e8705a; --primary-d:#cf5a45; --primary-soft:#fbeae5;
+    --teal:#3fa896; --teal-soft:#e3f3ef;
+    --blue:#5b8def; --blue-soft:#e8eefc;
+    --green:#5aa469; --green-soft:#e8f3ea;
+    --amber:#e0a13c; --amber-soft:#f9efdb;
+    --purple:#8c7bd0; --purple-soft:#eeeafb;
+    --gray:#b3ada4;
+    /* 柔和分层阴影 */
+    --shadow:0 1px 2px rgba(43,42,46,.04), 0 6px 20px rgba(43,42,46,.07);
+    --shadow-lg:0 2px 4px rgba(43,42,46,.05), 0 14px 38px rgba(43,42,46,.10);
+    --radius:18px; --radius-lg:24px;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; padding:0; height:100%; }
+  body {
+    font-family:ui-rounded,"SF Pro Rounded","Nunito","Quicksand","Segoe UI",
+                "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      radial-gradient(1100px 600px at 50% -10%, #fff 0%, rgba(255,255,255,0) 60%),
+      linear-gradient(180deg,var(--paper) 0%,var(--paper-2) 100%);
+    background-attachment:fixed;
+    color:var(--ink); min-height:100vh; overflow-x:hidden;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    letter-spacing:.1px;
+  }
+  #app { max-width:880px; margin:0 auto; padding:24px 18px 60px; }
+  .screen { display:none; }
+  .screen.active { display:block; animation:rise .4s cubic-bezier(.2,.7,.3,1); }
+  @keyframes rise { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  h1 { text-align:center; font-size:clamp(26px,5vw,38px); margin:14px 0 4px;
+       color:var(--ink); font-weight:800; letter-spacing:-.4px; }
+  .subtitle { text-align:center; color:var(--muted); margin:0 0 26px; font-size:15px; font-weight:600; }
+
+  .card { background:var(--card); border-radius:var(--radius-lg); box-shadow:var(--shadow);
+          border:1px solid var(--line); padding:24px; margin:16px 0; }
+
+  /* 按钮:扁平 + 克制的轻浮起,hover 微抬,active 回落 */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
+         border:none; border-radius:14px; padding:12px 20px; font-size:16px; font-weight:700;
+         cursor:pointer; color:#fff; background:var(--primary); font-family:inherit;
+         box-shadow:0 2px 6px rgba(232,112,90,.30); letter-spacing:.2px;
+         transition:transform .15s cubic-bezier(.2,.7,.3,1), box-shadow .15s, filter .15s; }
+  .btn:hover { transform:translateY(-2px); box-shadow:0 6px 16px rgba(232,112,90,.34); }
+  .btn:active { transform:translateY(0); box-shadow:0 1px 3px rgba(232,112,90,.30); filter:brightness(.98); }
+  .btn.blue{background:var(--blue);box-shadow:0 2px 6px rgba(91,141,239,.30);}
+  .btn.blue:hover{box-shadow:0 6px 16px rgba(91,141,239,.34);}
+  .btn.green{background:var(--green);box-shadow:0 2px 6px rgba(90,164,105,.30);}
+  .btn.green:hover{box-shadow:0 6px 16px rgba(90,164,105,.34);}
+  .btn.purple{background:var(--purple);box-shadow:0 2px 6px rgba(140,123,208,.30);}
+  .btn.purple:hover{box-shadow:0 6px 16px rgba(140,123,208,.34);}
+  .btn.orange{background:var(--amber);box-shadow:0 2px 6px rgba(224,161,60,.30);}
+  .btn.orange:hover{box-shadow:0 6px 16px rgba(224,161,60,.34);}
+  /* 次要按钮:幽灵风格,更显克制 */
+  .btn.gray{background:#fff;color:var(--muted);border:1px solid var(--line);box-shadow:none;}
+  .btn.gray:hover{color:var(--ink);border-color:#d9d1c6;transform:translateY(-2px);box-shadow:var(--shadow);}
+  .btn.small{padding:8px 14px;font-size:14px;border-radius:11px;}
+  .btn.big{font-size:20px;padding:16px 26px;}
+  .btn-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;}
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); gap:14px; }
+  /* 卡片:发丝边框 + 顶部细色条在 hover 时出现的高级感 */
+  .tile { position:relative; background:var(--card); border-radius:var(--radius);
+          box-shadow:var(--shadow); padding:22px 16px; text-align:center; cursor:pointer;
+          border:1px solid var(--line); overflow:hidden;
+          transition:transform .18s cubic-bezier(.2,.7,.3,1), box-shadow .18s, border-color .18s; }
+  .tile::before { content:""; position:absolute; left:0; top:0; right:0; height:3px;
+          background:linear-gradient(90deg,var(--primary),var(--amber)); transform:scaleX(0);
+          transform-origin:left; transition:transform .25s ease; }
+  .tile:hover{transform:translateY(-5px); box-shadow:var(--shadow-lg); border-color:#e4dccf;}
+  .tile:hover::before{transform:scaleX(1);}
+  .tile.sel{border-color:var(--primary);}
+  .tile-total{background:linear-gradient(180deg,#fffdf8,#fdf6e8);border-color:#f0e2c4;}
+  .tile-total::before{transform:scaleX(1);background:linear-gradient(90deg,var(--amber),var(--primary));}
+  .tile .emoji{font-size:34px;display:block;margin-bottom:10px;}
+  .tile .t-title{font-weight:800;font-size:16px;letter-spacing:-.2px;}
+  .tile .t-sub{color:var(--muted);font-size:12.5px;margin-top:5px;font-weight:600;}
+  .badge{display:inline-block;background:var(--amber-soft);color:#9a6b16;border-radius:999px;
+         padding:3px 11px;font-size:12px;font-weight:800;margin-top:8px;border:1px solid #f0e2c4;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+  .crumbs{color:var(--muted);font-size:13.5px;font-weight:700;letter-spacing:.2px;}
+
+  /* gameplay */
+  .progressbar{height:10px;background:var(--paper-2);border-radius:999px;overflow:hidden;
+               margin:8px 0 16px;border:1px solid var(--line);}
+  .progressbar > div{height:100%;background:linear-gradient(90deg,var(--teal),var(--green));
+               width:0;transition:width .4s cubic-bezier(.2,.7,.3,1);border-radius:999px;}
+  .qmeta{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted);font-weight:700;margin-bottom:2px;}
+  .prompt-cn{font-size:clamp(22px,5vw,30px);font-weight:800;text-align:center;margin:8px 0;letter-spacing:-.3px;}
+  .prompt-ipa{text-align:center;color:var(--teal);font-size:17px;margin:2px 0;font-weight:600;font-style:italic;}
+  .speakbtn{display:inline-flex;margin:10px auto 2px;background:var(--teal-soft);color:#2a7d6f;
+            box-shadow:none;border:1px solid #c7e6df;}
+  .speakbtn:hover{background:#d7ede8;box-shadow:var(--shadow);}
+
+  .slots{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin:22px 0;}
+  .slot{width:46px;height:56px;border-radius:13px;background:#fff;display:flex;align-items:center;
+        justify-content:center;font-size:26px;font-weight:800;border:1.5px solid var(--line);
+        text-transform:lowercase;color:var(--ink);transition:all .15s;
+        box-shadow:0 1px 2px rgba(43,42,46,.04);}
+  .slot.fixed{background:var(--blue-soft);border-color:#cfdcfb;color:var(--blue);}
+  .slot.filled{background:#fff;border-color:var(--green);color:var(--ink);}
+  .slot.cursor{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft);}
+  .slot.space{background:transparent;border:none;width:16px;box-shadow:none;}
+
+  .sentence{font-size:clamp(20px,4.5vw,27px);font-weight:700;text-align:center;line-height:1.85;margin:16px 0;}
+  .sentence .blank{display:inline-block;min-width:96px;border-bottom:3px solid var(--primary);
+                   color:var(--primary);padding:0 8px;font-weight:800;}
+
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:20px 0;}
+  .option{background:#fff;border:1.5px solid var(--line);border-radius:15px;padding:16px;font-size:19px;
+          font-weight:700;cursor:pointer;text-align:center;display:flex;
+          align-items:center;gap:11px;justify-content:flex-start;box-shadow:0 1px 2px rgba(43,42,46,.04);
+          transition:transform .15s cubic-bezier(.2,.7,.3,1), box-shadow .15s, border-color .15s;}
+  .option:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:#ddd4c8;}
+  .option .num{background:var(--paper-2);color:var(--muted);border-radius:9px;width:30px;height:30px;
+               display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex:none;
+               font-weight:800;transition:all .15s;}
+  .option:hover .num{background:var(--blue-soft);color:var(--blue);}
+  .option.right{border-color:var(--green);background:var(--green-soft);}
+  .option.right .num{background:var(--green);color:#fff;}
+  .option.wrong{border-color:var(--primary);background:var(--primary-soft);}
+  .option.wrong .num{background:var(--primary);color:#fff;}
+
+  .feedback{text-align:center;font-size:20px;font-weight:800;min-height:28px;margin:10px 0;letter-spacing:-.2px;}
+  .feedback.ok{color:var(--green);} .feedback.no{color:var(--primary);}
+  .feedback.show-answer{display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .feedback.show-answer .ans-head{font-size:17px;}
+  .feedback.show-answer .ans-word{font-size:32px;font-weight:800;letter-spacing:1px;color:var(--teal);line-height:1.2;}
+  .feedback.show-answer .ans-word .ans-ipa{font-size:18px;font-style:italic;font-weight:600;margin-left:8px;color:var(--muted);}
+  .feedback.show-answer .ans-mean{font-size:18px;color:var(--ink);opacity:.85;}
+
+  /* virtual keyboard */
+  .keyboard{margin:22px auto 0;max-width:680px;padding:14px;background:var(--paper-2);
+            border-radius:18px;border:1px solid var(--line);}
+  .krow{display:flex;justify-content:center;gap:6px;margin-bottom:6px;}
+  .krow:last-child{margin-bottom:0;}
+  .key{flex:1;max-width:52px;height:48px;border-radius:11px;background:#fff;
+       box-shadow:0 1.5px 0 #e0d8cc, 0 2px 4px rgba(43,42,46,.05);
+       display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--ink);
+       text-transform:uppercase;user-select:none;cursor:pointer;transition:all .12s;}
+  .key:hover{transform:translateY(-1px);}
+  .key.wide{max-width:116px;flex:2;font-size:14px;color:var(--muted);}
+  .key.hl{background:var(--amber);color:#fff;box-shadow:0 1.5px 0 #c5871f, 0 0 0 4px var(--amber-soft);transform:translateY(-1px) scale(1.04);}
+  .key.good{background:var(--green);color:#fff;box-shadow:0 1.5px 0 #498a56;}
+  .key.bad{background:var(--primary);color:#fff;box-shadow:0 1.5px 0 var(--primary-d);animation:shake .3s;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+
+  .result-emoji{font-size:74px;text-align:center;line-height:1;margin-bottom:6px;}
+  .stars{font-size:42px;text-align:center;letter-spacing:8px;margin:4px 0 10px;}
+  .stat-line{font-size:18px;text-align:center;font-weight:700;margin:7px 0;color:var(--ink);}
+
+  .hint{color:var(--muted);font-size:13.5px;text-align:center;margin-top:12px;line-height:1.6;font-weight:500;}
+  .hidden-input{position:absolute;opacity:0;height:0;width:0;}
+  select,input[type=text]{font-family:inherit;font-size:15px;padding:10px 12px;border-radius:12px;
+          border:1.5px solid var(--line);background:#fff;color:var(--ink);font-weight:600;cursor:pointer;}
+  select:focus,input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+  label{font-weight:700;color:var(--ink);margin-right:6px;}
+  .filebtn{position:relative;overflow:hidden;}
+  .filebtn input{position:absolute;left:0;top:0;opacity:0;width:100%;height:100%;cursor:pointer;}
+  .toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(10px);
+         background:var(--ink);color:#fff;padding:12px 22px;border-radius:13px;font-weight:700;font-size:14.5px;
+         opacity:0;transition:opacity .3s, transform .3s;z-index:50;box-shadow:var(--shadow-lg);pointer-events:none;}
+  .toast.show{opacity:.96;transform:translateX(-50%) translateY(0);}
+  .empty{text-align:center;color:var(--muted);padding:34px;font-weight:600;}
+  .section-label{font-weight:800;font-size:15px;letter-spacing:-.2px;display:flex;align-items:center;gap:7px;}
+
+  /* 模态层(PDF 解析确认) */
+  .modal-mask{position:fixed;inset:0;background:rgba(43,42,46,.42);backdrop-filter:blur(3px);
+              display:none;align-items:center;justify-content:center;z-index:60;padding:18px;}
+  .modal-mask.show{display:flex;animation:rise .3s cubic-bezier(.2,.7,.3,1);}
+  .modal{background:var(--card);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);
+         border:1px solid var(--line);padding:24px;max-width:560px;width:100%;max-height:88vh;overflow:auto;}
+  .modal h3{font-size:20px;letter-spacing:-.3px;}
+  .field{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .field label{flex:none;width:74px;}
+  .field input,.field select{flex:1;}
+  #pdfText{width:100%;min-height:200px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13.5px;
+           line-height:1.7;padding:12px;border-radius:12px;border:1.5px solid var(--line);
+           background:var(--paper);color:var(--ink);resize:vertical;}
+  #pdfText:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+  /* 欢迎页 — 选身份 */
+  #screen-welcome{display:flex;align-items:center;justify-content:center;min-height:100vh;}
+  .welcome-wrap{text-align:center;padding:40px 20px;max-width:500px;}
+  .welcome-wrap h1{font-size:32px;margin:0 0 8px;}
+  .welcome-sub{font-size:17px;color:var(--muted);margin:0 0 36px;}
+  .identity-cards{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;}
+  .id-card{cursor:pointer;border-radius:18px;padding:22px 28px;background:var(--paper);box-shadow:0 2px 16px rgba(0,0,0,.07);transition:transform .2s,box-shadow .2s;user-select:none;}
+  .id-card:hover{transform:translateY(-5px);box-shadow:0 10px 28px rgba(0,0,0,.13);}
+  .id-card:active{transform:scale(.97);}
+  .id-photo{width:150px;height:150px;border-radius:14px;object-fit:cover;display:block;margin:0 auto;}
+  .id-name{font-size:24px;font-weight:800;margin:14px 0 4px;}
+  .id-grade{font-size:15px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- WELCOME — 选身份 -->
+  <section id="screen-welcome" class="screen active">
+    <div class="welcome-wrap">
+      <h1>🎒 单词闯关乐园</h1>
+      <p class="welcome-sub">谁要来闯关？点一下头像吧！</p>
+      <div class="identity-cards">
+        <div class="id-card" data-child="哥哥">
+          <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QMqRXhpZgAATU0AKgAAAAgACQEOAAIAAAAGAAAAegEPAAIAAAAHAAAAgAEQAAIAAAAYAAAAiAESAAMAAAABAAEAAAEaAAUAAAABAAAAoAEbAAUAAAABAAAAqAEoAAMAAAABAAIAAAEyAAIAAAAUAAAAsIdpAAQAAAABAAAAxAAAAABfY3V2YQBIVUFXRUkAAEhVQVdFSSBQdXJhIFgg5YW46JeP54mIAAAAAEgAAAABAAAASAAAAAEyMDI2OjA2OjI1IDEzOjQwOjEyAAAmgpoABQAAAAEAAAKSgp0ABQAAAAEAAAKaiCIAAwAAAAEAAgAAiCcAAwAAAAEAQAAAkAAABwAAAAQwMjEwkAMAAgAAABQAAAKikAQAAgAAABQAAAK2kQEABwAAAAQBAgMAkQIABQAAAAEAAALKkgEACgAAAAEAAALSkgIABQAAAAEAAALakgMACgAAAAEAAALikgQACgAAAAEAAALqkgUABQAAAAEAAALykgcAAwAAAAEABQAAkggAAwAAAAEAAQAAkgkAAwAAAAEAAAAAkgoABQAAAAEAAAL6kpAAAgAAAAcAAAMCkpEAAgAAAAcAAAMKkpIAAgAAAAcAAAMSoAAABwAAAAQwMTAwoAIABAAAAAEAAAEsoAMABAAAAAEAAAEsohcAAwAAAAEAAgAAowAABwAAAAEDAAAAowEABwAAAAEBAAAApAEAAwAAAAEAAQAApAIAAwAAAAEAAAAApAMAAwAAAAEAAAAApAQABQAAAAEAAAMapAUAAwAAAAEAMAAApAYAAwAAAAEAAAAApAcAAwAAAAEAAAAApAgAAwAAAAEAAAAApAkAAwAAAAEAAAAApAoAAwAAAAEAAAAApAwAAwAAAAEAAAAAAAAAAAAAAAEAAABkAAAACAAAAAUyMDI1OjEwOjAxIDExOjA0OjUzADIwMjU6MTA6MDEgMTE6MDQ6NTMAAAAAEwAAABQAAAErAAAACgAAABsAAAAUAAAAAAAAAAEAAAAAAAAAAQAAABsAAAAUAAAANQAAAAo1NjkwMDAAADU2OTAwMAAANTY5MDAwAAAAAAABAAAAAf/tAFJQaG90b3Nob3AgMy4wADhCSU0EBAAAAAAAGRwBWgADGyVHHAIAAAIAAhwCeAAFX2N1dmEAOEJJTQQlAAAAAAAQ3IBFyWHy3Ezb3enHttGcO//iAhhJQ0NfUFJPRklMRQABAQAAAggAAAAABDAAAG1udHJSR0IgWFlaIAfgAAEAAQAAAAAAAGFjc3AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD21gABAAAAANMtAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACWRlc2MAAADwAAAAZHJYWVoAAAFUAAAAFGdYWVoAAAFoAAAAFGJYWVoAAAF8AAAAFHd0cHQAAAGQAAAAFHJUUkMAAAGkAAAAKGdUUkMAAAGkAAAAKGJUUkMAAAGkAAAAKGNwcnQAAAHMAAAAPG1sdWMAAAAAAAAAAQAAAAxlblVTAAAARgAAABwARABpAHMAcABsAGEAeQAgAFAAMwAgAEcAYQBtAHUAdAAgAHcAaQB0AGgAIABzAFIARwBCACAAVAByAGEAbgBzAGYAZQByAABYWVogAAAAAAAAg94AAD2+////u1hZWiAAAAAAAABKvgAAsTYAAAq5WFlaIAAAAAAAACg7AAARDAAAyM1YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/wAARCAEsASwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9sAQwACAgICAgIDAgIDBQMDAwUGBQUFBQYIBgYGBgYICggICAgICAoKCgoKCgoKDAwMDAwMDg4ODg4PDw8PDw8PDw8P/9sAQwECAgIEBAQHBAQHEAsJCxAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ/90ABAAT/9oADAMBAAIRAxEAPwD9ajO0b4NULxxIcirNxy1ZswIptCsZc8RJziqcka46ZNX7iTYtYktzlqliaO/0Jd+mbcZ2k1YhLC6jyo27gKzfDNwzWrLnjJq+t2UuEV8YLD+dJIzaLUsZLNtwOe1cR44Vv7AYMfuzIePxr0G4BEjbcYJriPGzD+xGjbli6kH6Gtij5b1tZFuECjA5rB1BQ9oScbo2H5V12tqPtPrzj865DUEDW88TdNoP5VhLc1gzulVzZRv6qP5VwPiONmi3gkgEH8q7y1RpdNjJP8CkflXG+IULW7fP0H61jURrDc+x9HnWfwrpUoG79zGee3y1SvYw2SPrTfBojl+Huj3O7JMKg/hVi4QOgK9D710R2Od7nT+DWK6bOi4OJa6bVEkMQcY4rl/BpIgu0UYAcZrqtQctDgcnNaxKOeAfa24AZFUwv7qbceOKvAuAc1QLHZIvU8Gqa1A5W8jXMnbNcvbKoumPJrsL0rufI7Vylu6pdtxwaiaKidAhYpwMCtl1KhDnkisiJs8da3ZDGYo/XFSDY4tmNfavNPFsRIcj0r0wIrRZBxg1574tibBKmspo6KR5tpas1tMD/DmubjjGZQOxrrNITK3CE9Qa5KJCsk6g9zXn1fiR6VJ6MybxMMD6V9e6E3m+GLFh3jFfIV0X3FfSvrfwm5fwjZM3XZXRg/4j9DmxnwI5rxGmdOu/+ubV+bOsxHztQH+0386/THXlDWNyvqjfyr83NdQre6iv+0386484R2ZK9TjNABFxH9R/Ov1q+C24+E7fPPyivyZ0If6RH7N/Wv1l+CZ3eEoD/sisMm/i/I2zn+H8zttfPQivObouH6d69G15fWvPrlAWyD3r6aaPmon46f8ABUC6Mmu6FbekR/pXp37EFn9n+FMkmMb5M/rXiH/BTC6E3jrR7fP3Iv6ivpf9jq1EHwcifGNzVy4r40jtw69xs/TPw4xPhqDHTbQ5JbNJ4Y58MQH2pzdaquv3aMaXxM//0P1nuFO6s+ccdK3pkUHkVmzoMZFVIVzmL3O2uelB3V1F6mVNcrcBg1SM7Pwu+I3UjPzD9av3bgXaBBgBl/nWN4UkJkkRjjoa3LtUM4YH+LP5UkjOSOlukUyEDiuO8ZrH/YrFhnYwI/A11l3tZ8luuMVy/itVOhXBVt2BWrA+Y/EShp2ONoLZ4rlLqI+UykZDriuz16JnWLPDNzn1rkb9niU56DjFYyLiddpw/wCJbBkZwgrmPEKboW2qNpz25rqtNkzpMJReSneub1lZJIG55rGaNYH0l8L8T/DixZ/+We5fyNbVyqFTg965T4NXHm+AmtnYDyJn/nXXXDx4cBgfwreOyMpr3jd8GMQLxcjHymuuu8+TkDOK4zwa4Nzer6qMV21yn7sjdzWsRnP4bDE8VnLzLICOq1otvXIzVFc+aQepU1fUDm75cO3uK5W0UG/w3SuxvVG85OMiuOiJTUAOxqZAdIoUcqM1seWDbxsepFZYPy4UZFa6H/R4s0gF2I0OBXCeKYCVypr0EY8okDFcZ4oiPk5U1jUR0UmeVabblZJwW65rlfKb7VMidia7HT9wupkY9Qa5Z42jv5vm6k15tfdHp0XozBvIXBJZua+rPAzCTwbaZ5IFfLeoQjdkt1r6e+G7bvBkA67TXThF+8OfF/wyDWUBtpwP7jfyr84PEYxquopj+Jq/S3VUzDKPVT/Kvzh8VIV1zUl/2mrmzhaHRkz95nnGjYW4X/er9X/ge27wjAMdq/J7TNwuQO27+tfq78CMnwhCe+K5ck/iL0OzOv4fzPRNdUbema88uFOePWvRtcQ7ck159cL8xOelfTzPmEfhJ/wUbu/P+KljDn7kY/8AQq+3/wBlGAQ/BOxbH3wDX57/APBQO7+0/GNVBz5aqP1r9IP2ZIfI+B+kcfejU1y11efyOyk/cPvvwqm7wxD9KmdFVsGjwjlvC8OK0vJU8tya3dHmgkcyqcsmf//R/XS9OHOKync4rWu+HyazZAhBq2iDFuzxWBKqMa6S6jGM1zNwCOVqCzc8NrGL0oe611t5DbYJY7OetcJoDZ1BVzjIr0G5hLRjJVh6UEMtXQiJGACMDHvWDr8QbRblQOi5xXRyxgIh4ztFZOrR79LuVxj5DWgj5e1sZVTjOwfzriNQjLR59c13WtjEZIAya4+/H7pCetZTRUTq9ERZNHgwOcVz+rKqxybvfpXR+Hdj6NHzjaSP1rD1ZotrAH1rKRrA9f8Aga6S+F9Rh3AMk5PPuK76dFDsDg5rz34DxbtL1tlORG6/qK9EuztcsxrSl8JE/iNbwiUF9dKMZKCuuuCxjbn9K4/wZE0+sTxwjkx96768tLm3iPn4wfStoAc2UODk5qhEpe7zn5dp4q7Kj5PWqlosjXJVecA5q2BjaiBvAHvXENvGoLgZGa7a/wD9YFxXJXCst0rL1zUzA3VLbOnOK1omVrVCw5FZWXIArRi4sgT1zU3Auo6NFiuW8SxxG1zk9K6GJiEwBWF4iCvYkjrWU2bUjyW1SMXsnPUVyVxt/tJ1B45rsbcILzkdRXIXSbNUZgO5rzcR0PUoGffKiOAOc19J/C1t/hEL/dY1826gF8wHFfRHwkO7wzKvo5rfCv8AeIxxK/ds29XUhJBn+E/yr83/ABdn/hINRU/3mr9JtXX5Hz6Gvzf8ZqF8TagAON7VnnK900yj4jyyw2ifryGP86/Vr4CEHwdEfavynsADdkAdGr9VvgFu/wCENj+lcOSfxEd2dfAeoa390e9efXWFLEivRNZ3mFa88vlYK5PYGvqZHy8T+c/9tm6N/wDHC4jP8Lqv61+s/wABLMWnwW0WMD/lip/Svx+/axmN58eb1M5xOor9pPhHaNB8IdFQdrdf5CuOr/E+R3R/hr1Pr/wUc+Foq2lAI6VjeBQf+EXi710ax5HpXfDZHDPdn//S/Xu/jwTWA+RnFdNf4bNc/JG2DgVoT1Mu4BKVydzLtZhXYzKTGRXE36sHbFQyi7o0n+nxEeuK9HvA5jQ9a8q0l2S7ib0YV6nNL/o6kjOKETI0XiZoYSp6oKq3EJa0nUknKEVbSVnsYGI4A7VE4Zo3BBOQask+Z9bg2Rse4OPyrgtRjG0Oe1ei+IQQ8sePuuw/WuHuUDxfKOSMflUSKia/hdUbS9p5+Zqo6nHEokQj8TWh4VX/AEB1wchzmqerIN0m7mspouLPRfgVKP8Aid28bBQwQ9a9PvIQZDuavIfgYyJrWqRdN8QxXsF/EzSkg1dH4Rz3JfDEk1prZaE9UIrt7i6u7uZlkbgDgV55oRaHW1JPDKRXcQNJJcuR6Gtooze5BKZRjIzVXT2Zb5i2ANrc0+ZpjJgHivmb9ov492vwJ8IyeJo7L+1bhWCtbq2xgjdXJ9B605FHrfjDxd4c8J2smpa/fx2kKAtljyQPQd6+FPiT+3Z8KvCt3BBo8v8AaTSYLspACAjII656YIr8dPjj+0z42+KeqJPealJ5VlJL9mIPllYZGz5bKDtO09Dz6dMV8sXOpzXDZllLY6e1RJj5e5+6mp/8FMPDltDFFDpTSTBmjlZGBVSGIDc9QVGRj15qxd/8FPPC50qWbStKf7RHGWEchGWbcRjgYGAN3vn2r8FTc8Fcnmk81gMq/PeoDQ/o2+EP/BQ7wB4xlfTPEsP9m3AgaZZC48tioy684OQDkeuDgcV9gaD8UvBXj7S4Z9B1CKdLuPzIirg7x3wOvGRn6iv5EbfULiCZJ4pCrIcjB717L8O/jV4x8Fanpcmn6hNHHYudiiRgoDurHgH/AGRUyVyouzP6exAEut+M81yGpjbqGFHU14V+zL+0hpfxrtr20nZI9Us55AEHAeHd8pXPUgY3fhXvusqyaiTjHNebibpHq4aV2Y1+RgDFe9/B592hXKEdHNeE3wZwDjpXuPwaONOvo+uGrTDP95EWIX7tnZauPkb3Br84PHKbfFd+P9pq/SbVVO1uOxr84vHiH/hL78d9xozj4R5R8Z5DpwK3b56bq/VT9n3B8IJ6Yr8sbONvtkgPZq/Uv9nfnwioPp/SvPyV++vmd+dr92es60B5APvXnepHFvO3orH9K9L1xALTPvXmWuMI9OuXz0jY/pX1T2PlYn8zn7Rs/wBp+Pt9zn/TAP1r92Ph5F5Hwt0aPp/o6/yr8E/jM5vf2gLgdd+oAf8Ajwr+gPwpCIfh1pMfTFsn8q55L32zqUvdSPo34fHd4XSurVTjgVyXw4G7wuo967NVwMZrshscr3P/0/1+1AEHPasgygAg10t/GNua5iaPGa0IRSkYMpArmLpFLNmunAAz2rnb4DeahlmRb7Y7lGH94V6luR7UArwT1rytSBID716nEI/sIOckgEYoRMjRt5MWCDHQkc1HlyrHHFTWiK1iu8HIY0i7RuyOgqyT558TxOl3dZAxuOK88uUzApHHXFep+L1UXtwvTLf0rzWaPzIABwATUyKiXfCqn7NMvUh6h1i1dpGboKm8JswF1GuT8wqXVll3tjrWci0a/wAGlaPxXdIxxuh/PmvcNSjkLt9a8I+E4lXxlJjvGf519Bap53mNtHenR2HPcxtJUrrEPU9RXbRST/aiEHGDXF2xkh1SAnoTXcW7BbtUPJYcVsjNnN+JNYh0LTLjU76QQxRIWZjwAB3PpX8zv7X/AMdtQ8f+Lbu0tNVlurC3nlVYmypUA4HI4KnsP1xX7W/t3/ES28C/CO4hvIgw1Rvs8R+Vm8wjOApIJ45z0Hf0r+X3XBeXF/NPKcBmJAPPB7VNSXQ1pwb1MCeVpPmJ46/jVcuMcd6sy2rou4g8+1VCjjqMVApJilhgADB9aaTxQVbuDTaCR249qcJCDTBjvS7TQB6j8Lfin4j+GHi/S/E+iXLxtYXAmKBiBIMjcrY6ggciv6L/AIU/FjRPjN4MsvFejyK8hVEuEyN0cu0FgR16nvjPav5fuRX6HfsCfFafwv45m8HXcyRWOsEYLtjEvRdo7k9P84rnxVPmhc68LVtI/bi/GFUYr2L4NuPJvo/evJ74MyLx1r1T4Or++vk6E1yUH78TurK9OR6Vqqko2Pevzy8a2pPjG9DD+Kv0S1RPlevgjxggPjO8DD+Kpz2Vqdy8kV5s8LFqYtTkUdN9fpp+zwP+KU+n+FfnVPFH/aj/AO9X6Jfs7tnwy6jtXj5BVvVXzPVz2n+6Z7JrOGtCfQ15X4oYR6FfSY6Quf0r1bVQTZN25rx7xs5i8L6m+ekD/wAq+4Z8XE/mR8aH7f8AtDBeu7UwP/H6/oi0eAxeCtNjxjFun8q/nbI+3/tF2w67tT/9nr+giLxXaWWmW+lXkTQrFbp856dKxm0r3N10PpH4aHPhnHoa7bn0rg/hVc2114b8y2kEiE5yDmvQSvNdFN3ijGe5/9T9jdQBEYrmZFJNdberuhDVzD9TWhmZpXrWXPaiTJNa75ycVjXcrRHIqZFORz01t5cmO2a9CssixQjngVwM0xkJavQNHBl0tQoySKSB7G3pRZrF8nJDmnpGOcnmodKhIs58gg7hVgRoDtJ5NaJEniHjFB9vmAHJwa8wCv5Z/i5r1vxiANQmG3kKK8ty21goHy9aUkNMTwqxM12icYINXdWeQOwAH1rP8MEpq15GBwygitbWEYNkd6zaLLHwr8w+NDuOAYmr6B1d2WZgCSK+fPhsfL8aqP70bV9FatHiXLfWinsVI5uMtJqFuo6lwK65oLi01WNJOTXKJ8mo27Aj7616ZfWhOoxXDsAMDHNbxWhnI/Gf/gqB9rudT8L2UrxNEsc0ixKCZtwIHJGAF9utfjZH4Yv9RuGNraFmzjpmv2k/4KKzoPiR4f09okVnsHZXPzMQX5AGMADHrk57V5b+zx8GrXxT4dk8Q3MI2liqZHUjuK8jHYj2d3Y9/K8OqqUWfnx4d/Z417WNt1eqY1bnGMfpXX3/AOzWlrEqwp5kzjJJHSv1sufh5YaaVijjGyMYIxXPy+DLV5ZLqZcg9AfSvicdxDXhLc/Q8v4bw0o7XPxw1X4DalZEose8sM59PwryPW/Ad1pshi2Elc5r9nvEHhW023EwQYJOBj0GM/rXy74v+H1vMJdq/M2Tz708DxVNv3ysdwdRcfcR+aVxo80AJKkYHes54GQE19ba58O2CvhMjHYV4N4l0JtPcoFwV4I+lfYYPNIVdFufA5nkM6GvQ8+dB1r0H4S366V8QtC1FpDEsF3ExIGT94cdD/KuIkj5w44zx9DW94aYW+sWd2E3+RNGxX+9tYHH416UnoeHTjaR/UzaTm50ezuUHyyRqR9MfhXrPwidv7SukPGVrwrwBew6p4A0S+gQxJLbRsFbgrlRxj2r3P4UFU1udM9UrzIfHE9Of8OR6vqS5LCvgbxwNnjS7B4+av0A1ADcwr4H+IiLH41uc9zmnnivTQZI/fZ5FOV/tOTP96v0J/Zuk8zQJUr88p+dXkA9a/QP9mdwulThucGvCyFWrI9rO9aLPfdaQran614h8SHWLwVq8h4xbv8Ayr3nXG3wEp0r52+L8nkfDzW5PS3f+Vfes+IifzXeC0+3/tIWCgZ3agx/8eNf0W634btNZ8Lx2M0YDPAg3DqOK/nj+CsH2/8AaT07v/pbt+pr+kW4ATT4489I1H6VnNXuma32PKvBQ8a+APDVza6An2pVLFS54A/z2rwK8/a8+K1le3FnJpcTNC7LlSSOK+/fBNpDe+EtSjZN7BXx+Rr86I/ttnd39umkROEupcE5JPPeuLE05KCUHY6KE05O6uf/1f2euIy9qDXLeQWfAr0K2thc2mAM1zklqLa4O7pmtWZXMCewZF3EVjTac1wp4rstRuYzGFFZMNxHEpZqQzzi9sHtmINdpoErLYBB1Fc1rd+k0xVK2tAObVsVA7HWaesjRTgjoRTgnzKTxUGk5/fAntVhgD0OCK2RN+h5D42XZqD4Ody15bDy0qEZPNeueOEAvAx6FM15NDgvIe5NKQIp6GWj1yRc43xcfga1tfZk2sTXP6QzLryL2Mbfoa3vETkrEC3UZxWcjRMg8AT7fGtuQDyjV9MaorM4ZuhA718zeDFH/CY2eSR8rfyr6evoy0IYHPAohsXLc5hlVbqFx0Dr/OvSNSR57qCSI7guM15xcRvlD7iu5gmkSRB1zitEzOR+Sn/BTrSLuPXPCmuLIQslpcQKB/CwcMTn3B6e1e5/ATRE0L4PeHYiu2SW3Ej/AO8/NRf8FIdA029+Guhas5H9oW1/5ca4zmKRfn57DIX6nFdxq2p6d8PfAulwzLueC2hVYl6khBmvBzh6aH0+QRutSrrSw4fjrzXnF9JtjeNOa5v/AIXX4S1Oc2085s53JAWRTjI/2ulbH9o2V9aNcWziROmVOa/Ncyg3LVH6vlUko2uebayd8LrjnOP1rxjXLUM+4rnsfzr2XxBe6dbR7rqVYgOSSccV4hqvjzweJWhS480rnoCQfoa8ujQm37qPanXjFWkzgbvR0dZNyjp6V8p/FDw1HC00yDDHke1fZ0Ws6TrYaKyPlygZCtxke1eI+P8Aw3NqFrO23JXPHtX0OU4iVOqubQ8HOMPGrRaWp+eswMUzI474NXtGDi9ijXOWYD/CpPEdu9nqE1vIMFGxXQfDLw1rHiTxXZrYJmC2mjeeR22oqKwzyc846da/TZ1YxhzydkfjVLDzlW9lCLb7I/pj8A6VLpPw18NafM+XhsLdWJ65EYzn39a9i+F58vxEUznctcHoF7o2v+D9M1PQLxb2yMSxrIvHMY2lSOMEEYIxXa/DopF4njAOcivPg1JxkjrnBxUoyVmj3PUSRIeOtfCvxSj2+NJiBjNfeGp/6zOO9fDnxdj2+MWb1FdOcR/dnPlD/eHz9dKf7ZkXdg197/swsXsrmAtkk18BXz7deYnoa+7v2XJSTcAcc14GTK1ZHu5vrRZ9Ua7A1tb7GPWvmD48zi3+F+uyZ6QN/KvqrxKSYxu5NfH/AO0vcfZ/hHr0nQ+S38jX3SPion4BfsyQfbf2krA4ziZm/Wv6Mr5P3GM9FH8q/nq/Y0the/tG27HkKWP61/Q5qa5Q7R2rNls6T4cylfD2qDrtV/5GvmrwNoWnaxp99fTxne19cA/gRX0p8NOdJ1WMjs/8q8W8BMIdMvYwMYvZ/wCYqoxvEIz5W7H/1v220a4Hk7TWNrgKSFgetPsJfKi3elZWrXnnHFbMytqYFw5J61nXLHYQDVyUEjNUboYjqWM4e8BWY5712fhxswFfUVyl8oLbq6fw22I8VMSlsdfpgKyyDnkVZZGDdKg0x9tye5INW596tkg8nNaozZ5p44jUSxyt/dxXjIx9qYL8oBxXuHjhW/cbh1rxW6i8u7lI4APAokNbmbZxCDX0H+9jHvXQa/bGayjeMfMhrE+VPENrn+NTXVaupayIBOR6VmzSJzPhxJYvFNi+cZz/ACr6lnDNZREfxIK+UdCkx4j08tx+8x+dfWMilrCIZwAuKcCpHL3G4IPm6GusBYyxNnqFrlLiNgp5Bwa723s0NtBL5gzgcVaRMj4I/b18O6lqGmeH9TjQy2UTNCcchZTIrc/Ven0NekfFPXfBvhnRPt/ivUbbTbWJBl7iRUGMe/X6DmvqPxp4O0jxp4cvfDetIJILpeCRkxyLyjr6FTz+lfKPxS0rQtTsPsWt6bBqe1cMJkVuVGPlJ5H4Yr5XN6fsueUnpJ3/AAS/Q+1yPEe3VOnFe9BW9dW0/wAbfI+FNb+L3wn1fXf7E8P6lb3V8QW8oI4JUdzuUce9el+GLqyl0maW2QJuGCB0yP8AGvIrj4LeGoPF7694R0J7HUJkMTTrczYCMMEY3enH0r6Z8G+AYvD+hpYzcgJzkk8/U818Fip0b/u27ef/AAD9GwsKyj+9Sv5X/U+c9ce3nvil586E4welcve+LPgvZM2mzanYtf7vLaLzF37x24789K9Z8TeDre61GQISIn3KQCc4PHBFeJ3nwG+HWm6nBqq6EYbi12mNobiZVJXGCVyRniubCVcPJNVJNeh14yliE06UU+97nP3uq+E7mVl0u4gYxn7qOpYH6dRWVcxJd2spZeHH9K7wfDfwSszXzeHIBJnPmSb3cn3ZiTUer2FnFAUtoxEuOAO1VTrQ5+WF/maToT5OadvkfmT458KXF945fTrZdplYD2A7mvefDmi6f4N0aKLTULFSN8nHznufp6Ve8U6FbRa3d6lK4haMZDkgY/E1DpZn8Q6nHoWiqbuS4aKMCMZDSuwCge5NfUY7EyrQjT6I8fIctp0JzxDWre/kfp1+x3qF7feC/EMcpb7Il8hiB6Bmj+fH5LmvsvwQfK8VQAd681+F/gGy+GfgLTPCtuA80KeZcyD+O4k5kP0B+UewFeheFJgPFdsAO+K97AUXTpQi+h+f51i418VVqw2bZ9G6oDv4r4g+MwK+KwSeq19xamBv5r4f+Nm3/hKFPfbXr5ov3Z4GVv8AeHzNqsu3XCF5r7k/ZcnzczDPevg7VWH9uc8V9x/suPjVJkHQ4r5/K9KqPoc0/gv0PtLxIdyA9OK+If2trn7N8G9bbPWNv5V9y+J1XywOlfn3+2ncfZvgxqoH8SMP0r7eJ8Qfj7+wbafbP2gHl/55qT+Zr+gDUeA3pX4T/wDBOeyN18bL+fGdif1r949RhyG/GsmaGt8MGzbarGOeG/lXhHhWVoYNRQ/8/wBP/MV7v8NWhtW1QSsqDa3U47V8dJq+qQ6jqyWdxH5P22bb8w6cU1UUY6lQpOTdj//X/Ze0+a2P0rDulw5Jrb0vMkRWq95bcmtWzM5mRgOlUrogx/WtuS14JrMmjBWkNI425TcwAFdHoMRQ4qpJCpkGBWppZWO9EZPBpR3LOh0/ct7ntg1elkAfLCktwouxjpU9wFBGMVqZSWpwfjErKtsx968NvS5vJcdc17z422myif0JrwO6YifcnIJpMSKFwNviKxZxw4x9OK7u7jjNuUYVx2pKDq1nKOcOufyxXYXZAiIx2qDVHFWUCjxDp4THzTL+pr65u7Zre1SF0IZRXyOkvk6rZTEAFJkP/j1fZusyidIZAc7o1/lRTLfQ82u1O167+xhj+w28hP3lFcJelsSDHIr1DRNMlu9MtJC+0bB2rVGU1cbOCQMHgYr5F8axQm6nZ/mG9gM+mTX19dRGIum7kGvkb4pxGDVLyKPghyeP9obh/OvmOKKbeHuj6rg+olibPseL3Gp2NhcARqC7NgKBySe1elXUCw2GJiqSRr84z0r5Tnu7q58WW9qsuwo27J9q6HxHc6vpsepa1Pqs9wl4o3QOQY0xwCnGV/PHtX5hSpNwkfsNdpTjYTXTJdS3GoadKmy2Y7gT1PpWjol5YaxZJcFA+RyPQ18l6ifEGlapcRy6s3lXCk+QDmMb+QSODketen+BLqfRNOW1luRLvBbrk5JzzXmTwDgviPXVdSWx6F4ptdOSF2VdvsK+a9ZugkpiaQPyegxxnjj2Fdz4w8UyfMgPFeFz6kbm4Jc967csw7Urswx9RclkeWeNLS31XWIrW4QyhW8wJkgFugzjt1r9AP2Y/wBnSfwmlt8SvGMCpeTx+bp9oFCiISD/AFzL2YqfkHUZyecV6P8ACv8AY98OwnR/iT42vHvpbu3guV03ywkaMw3KJWyS4AIJUAc8Hjr9XeIXChNvAxgAcYr9FwWWyXvVPkfmWccRQlD2GGe/xP8ARGE0zGIHHWl8NsyeJ7M46vUMXzx/NTdIkMfiKzOeN4r2IrRHyMnufUmpKC34V8P/ABvjA8URn/Zr7i1A5RW9VH8q+KfjoMa9A2Oor0MwV6ZxZdpUPkfXTt11SPavt/8AZfcjV3B74r4b8Skxa5H74r7a/ZflDa0wXuBXz+Wx/eo97M5fuWfdfifaYwR6V+bn7d1z5HwbvRnG4Gv0i8TIfKHPavy+/wCCgtx5HwklTP3zj9a+0prVHxrZ8F/8EzLXzfihrVzjOxR/Wv0l/ap+L+tfCTwvDquiRq8s8mz5u2a+A/8AgltZ+d4u8RXZH3cc/ga+p/2/1/4oGzYYOJ16/WubGNxg2j0sqgp4iMWj4H1T9rn4mvcyytfvCs3BSM44NeUL+0p4u0SWe2jDP5sjSkl8kl+teaam0ecsBnivNdcnX+0XwOMCvEp1JNH12Iw8IvRH/9D9mdAjMpZB1rdl0iWTOTWH4XJF+6H1r0h4HJOK2sjO2pwE+jOkRJNckbMtMYj616/c2zNEQa82uozb6kq+ppJFoqnw55mGFZB0l7fVY1B616zFAPIDEdq4a9aJtZiwcYNOyGbsWi7EM7H7ozWTIYySAMmu92xvayKrDla4YxDOc4qhdTjPGS+ZpILLjBxXh97F5asQo4BFe9+LYi+jSAHODXhF5jywjHG44FDE0YN0N17auOCdu72rtrmP5Uy3GK5a8iAMLrztZc12ckfmQ8ryMYrMo891WBI7uNweVdT+tfYMqy/2bas+MmJT+lfJPiCMAqFO0jmvrO1ffoGnyHktCh/SnDqVJ6I5e+B+cj0r1fwvNP8A2BasuGwuOeK8xutzhhtrvfCouRosOxhgEjB+taIhkmoKWldm456V85/GXQ5I5bbW4hmG4AhlPZXX7pP1HH4V9OXsLsxJIFY+q6NY61pc+lakglt7pSjjofYg9iDyD61x4/CqtScDry7GOhWjU+8/GDx34b8V3fjaKPwreLZyoctKyBwq5z0PHNWPGGneLIbIS3+sQuQFyksZXGP7u04IP0r6n8Z/D6+8F+ImgvB5qTqzW1wBxKg4yR2Zf4h+I4rw3xnZW01qRqK+aByo6V+UVoyw7lCa1P3XLMfCry1Yao+G/Fh8Q2V35i3dvdyZJG0OzY7ZOccfStXwHdeKL2+MmsyRxWzDEaqGDZHfJOMfhXfa3plpE4coAnoea4y51FYJx5Ixs6VxzrqSske9Xq82trE3ia6dpnQnvXY/AT4X3PxQ+JOm6E0Zawgb7VfN2W2iILD6ucIPrXkmo61ACXkOT1NfpJ/wT+0uO60HxZ4t8vHmzwWMTdysamR/zLL+VexkOBdSqubZHyXE+a+xw0nHd6I+09ZRY0EcYCKgAUDoAOgFeW+Iix2AV63rcXBNeT+JAY1Rj0r9FqxPx+izlYHcIRRbHZrNlJ6SLUluNwOBUG2RNStG7CRf51ypaHW9z6zu1H2aJ/VF/lXxh8eUxq9s47ivtCf59Ogb1Qfyr43+PETHUbRz0xXo4xfujhwb/eHxj4sBXWImPoK+z/2XZD/bg9CBXxj41IXU4WPYCvsH9l+X/ieIfYV4OAX7093MtaJ+hHiddyKPavye/wCCjkxg+GMcfTew/nX3V+0B+0D4S+EVvbxaq32i9n+7AnLY9celfmH8Y/2hfh78ZYItL8T2ksVtC2QoGc19FVxypO3K2/I8DC5bOqua6S8zhP8AglobOyfxJf38iwKWOC5x0HvXqn7f/jfw7qHgi20zSb1J7lZhkKc968Z8P+Ivg/4bhe30Ke4sEm4cRZXd9cVHrEnwW8QoEvrqZ++XBP8AOvPxGac8XF039x7OAy2NKqqnOtD84by6R0AKnPrXC3unT3Ny8pY89K/TYeDvgE/W7Yf8BqVvA37PwPy3mfqteSsZy/Zf3H0NSUJvVr7z/9H9mdAcR6w3oTXrBlj7kCvGdGbZdrI3eui1XVpVbbEa2sI7i4nhCk7hXmetSxi+SUc4NZr6vcjhmJqhLOZ23MaaQy3deL5bK5CgZTFcrqGupf36TQja2ag1RomznrXM2+UuQfemB6zbald4UbjhuDWjIrE4ArDspAqRu4roZX3H5eBQBz/iGMf2TOtfP2oR4mUHkKa+itZXdpk3HOK+ftTDb+B3pMDMuACFIHG4cV1nl4i2k9cVzRhLxL6qwrsY0GxWOBx3rOUktWNJvRHAa0iyFgFyRX0vo95bw+GtOku5khjWFQXkYKo49TxXxF8VPGvifTLtvDHgLw7ea1rUy7jOISllbKeheaTbGzf7IJ9/Svz1+Mfhn4+3ts+oeLbHU7tY1Pz+Z9pjjA7BIWdUH4AV5VbOqFOXJzK/qj7vIeBquMh7SrUVNdL6t/LT8z90NX8ReHNM0u51i+1S2gsLVS0s5mTy1A9SCefQdTXgEf7d/wABPDelSxrcajezwO4SOO0KiXHQq8hUAHtnB74r+doeJvENvP8AZ4J5UKvgqrMOR7DvX2r8Ev2b/ih8UzFfeLCdD0KQBjLdR5uJQecxRnDY9GYgemayrZ2oq70Pr6Hh5ltCDnjKzfpp/m2fd3hX/gp94Dv/ABW/h/4jeFr/AEK2vJSLC8sQdQRkzgLNGihw46nYG+lfc8nxp+Hkmjwatpd+2ofaEDxwpE8cpB/vpKqlP+BAH2r8yfEH7GFh4cSLV/hf4rvtH1q25jkuirwse4JjVXQH6MPUV5Zr3xm+K/wJvYdN+L3huLUrOQ7Y9W0+T93N+mzdj+EhCfTvXOs+5/dp2v8Aj9x4eN4SwVabqYKWn8vX8d/vPvP4p+N77xZEl7GqxtbKfLgB5C5zw397vngduBXxP41+JD7Xtrq1Mjp2HySD6of5jiss/tJfD7xbiTTdWFlcuOYbtTAR7bj8n5NXFeJ/FGj63AUvvKuAe+5WGPUEZr5LNZylO84nu5Tl8qMOVaWOG174r6a8Yhm06csnAwo/xryTU/iDLduUtbKSMH+8AP5ZqbxH4fAka40S8JRufKc7sfQnNedSvqNvIVn25HqMVjQwtJq8Ud9SvWXuyZ0LXN3dt51yTj09K/VP9j79pH4EfD34d6f8PPFXiSPR/EN/e3E8iXEUiQgyFVjBn2+WMqF6kdea/JFdSURs1xIAFGcCvFtW1JtVvb6/GQnmAw/7sahf1wa+jyi9Obdjw8zwEcUvZTb7/cf106nLHcwLPbsssUqhldSGVlYZBBHBBHQ15Z4li3xKT2Nflf8AsZ/tjWHgPRZfhv8AFfU5pNBt4hJpt1sed7U/xQELljGQcr12kEdDx+iekfGr4T/EXbZeEfEtrfXb8rAS0MzD/ZjlCs34Zr6SVVSR8Ri8gxOGm04tx7paWNOIbcovWqlwrrcwNnkOv8630twjM7/KoHJPAFc7Lf6TcXiW9rfW886sPkSVGcc/3Qc1hFqxy+zb1SPq9Du0a2b/AKZivkv47x5ltH7GvrG0cHQ7ZWGCEGRXzH8c7fclo+MAGvTxCvSPJw7/AHp8L+N4lF7GxHO2vq39mKVINR+0vwsaFj+Ar5p8bW4a5ib/AGa9X+Hmujwt4O1nW92zyLSQg++014OD0qn0WMV6J8IftA/F+b4gftLeJdPmmMlrZH7NAM5A2dcfjXjV98s5LnkZFeC6Rr9xq3xnuNUlbc97dSMx9dxJr3XxIfs91L25r6OWtpHlUp2TiUrK+3zGJuqmujjkU4rzK0nZL3dng16FasHUGtYS0FJF4le1VJ+ZMjvTxbXs8oSzgeZm6BFLH9K66H4eeN7qJZotFuSpHGYyKJVordka9D//0v2E085dO1aV8uGz7VSsl27DWjqHy4NdBDOfngdlJVc1RjjZSQ1dVHMq2xUrk1z7ZLnNBSOQ1IlJ/WsdWzOCBjBrf1ZP31YDqUmFAz0S2kjktoh3GK60siohVewrgtO+aJOehFd2WzFHgdqAM/Uvn0+cH+6a+f8AU9xbAGBnrX0NeruspQf7prwLU1UMx9D0pMDz3XvGGl+H1NtPKv2gAHaewPSvLdT+MMYk8uOXzCAeAeOK9W1/4e+HfF0iXmqQusqLtLxPsZlHY8HOO1eUa1pPwy8N+KJ9D0eySSXTbMST+aWmZ57g4jBycAIoLdOrD0r8t4lyfG1JzrVan7tbLX8j9p4NzPKlRjRo0W6trybS/PtfY5WL4qalfwyK0Tr8x2nHaujk8S6jDoQ1NmYHAHmfw59GI5XPr0z1r5x8ZW3iC51QWmlX09kkrKqCI7VAPtjFfVfhrwHa2PhhrC91i61OVoG87zPLCyZX5l2heh6etfB4vB+zSae599Tx9Fq/L1LHhbT/AAnq9lb+K9V0SxuZ5cSWs7W8Yn55Zt+3dw3fNd9J4xstNlUzxrCnU7T1Hrz3rzbT/Hfhi80pLC0gjtooVES7ekapwBxyNo7V8bfEb4rWWr+M5fD3h69lungAQ+WDtDE9Mjqf5V0YeVacuWL0Rw4jKoTblVja5+sarFfW4zh0cZHoQeled+IPCWnapZXGi63Yxajpl2NskFwiyRsD2KsCD7eldf4eMtloOmWt1zPDawJIT13qig/rW7KsNzHtIya7albm1vqj88jenLQ/P/Xv+Cfnwn8T3kl/4f1G98Mb23GGJluIB/upKC4H/bTHtWPc/wDBOLwVZWrO3i6/n2j+COJD+oP86/QeMfZZdvY1uOi3dsY+xr0KOfYiMbc135nRLG1ltN2PxS8b/sQeL9Kgkvfht4me8ZM/6NdHynOOwdSVz9V/Gvjbxf4c+LfgiRrbxjpd1aKh2+ZLFujP0kUFT+df0SX9vJptzJ5QxnrWXcnRdXtmsdasobqGQYZZEVgfzrGhxbJO1WCf4M9CE6nV3P5qZNTvJshsEHrmvRPh38HfGXxTv/suiWxhsxxLdyKRAmeiqf43PQKvPrgZNfuLN+zl8GdRu/7RsdHs7WcndzawuM+xZM/qa9C0z4bWmkqgsRE/ljarE/dHooxwPpXoV+LI8n7mOpr9YSVrHwNov7Cvg7+x1htdc1JNW2ZM7CJog4HP7oKDtz/t596/OH4k6P4/+D/xHvvCfiKRkudPcSQTRsQkkLcxyxnrgj8QQQeRX9JmmaILWFuhkfrjsPQV8Pftg/s3X3xYsbPX/CkCzeIdIDhYSQpurduWiDHA3KfmTJwckdSK4sn4lqwq8uIleL/A6aGLnUnGHPZJn502v7QHizXrWOHxPqN5qxiUKnnXUhUbRgZUkg/5zXl+p+ItU1LxCs8GYWjG9HjJVlPbDDmmj4XeP9J1Gayl8PahHLASJI2tpQyY65G2ud1FrnSrtPMDwTRnDKwKsD6EGvqpYhTfuu5+jYNwjSSkku9rH3r8Hv25fi/8NnttK8QX7eJdITCG21Bi7qo4/dz8yKcdMlh7V+h2s/Hz4a/FvwjYa9o+pRWL5CzWt3IkU0MmMlSCQGHow4I9DwPwJk1dNUth5ihZU6n3rpNE1VZ7Xyrkb1UgMp6/Ka9GhmVSMLS2PmM64EwOMqKVNckns0t/Jrb57n6yeKr7SdQKvp15DdYX/llIr/8AoJNcf8QvEUug/B7UljO1ruNk/AivgKx1q5gkdo53ito13/e5GOwNeYeMPjb40v2/sFNSmuLIHHkOxdCPoa2w9b95eOp8jnnBEMNR5nW8rNa38rHCeDJP+LjWUv8AeuDX1D4wV5b14olLMTwByTXz94C0WDUvHGkXLKdPaSdQxbJhBY43E8lQO/UY9K/T/Rrz4A+ANTS41XWIdY1bo1wYmktYWH93j5seuMV7scxpcmr1PganDGPjO0KTl1uk3ofP3w+/Z68c+Lo01S9jXR9MPP2i6OwEf7Knk19PaZ8Kfhl4Pt18+OfxFdqOWc+VBn2HUivSI/F3h3xRb/b9F1WHVUXoY5AwT22D7v5VxGuaiNjZNZPEuS0PEq0pwly1FZroxs/iebTozFodjZaTEOnlRhn/ADrhb3xjrjXDM2pzEn0IUfliuf1XVWywBzXFT3kjSEmudq+407H/0/2GsjnYc1s3kZkRSPSsSxXhW9K6OSRVRc9xXSkQzCy4HliqEq4PPWr80hEpIqntaZjihopHKaoP3oNYFyTuGBXrVlo1vd/NOM4p2q6BpkVsXAAIqWaqk7XOH0pj5YH0r0RGLW6D2rmdEsbaZHUHBFdSEWNAg5xTMyrMrG3kDH+E14LqagzSc/xGvepQTFJn0NeKXlsJZZNg+6xzQBxfiLxJY+D/AAxqPiHUyBDYxGTH99uiIPdmwK+GfhH4tg1Ofxt4g8SBn1XV5YvKLKfuHexK5HTJA9sCk/bX+L82jxW3w98PzBbiEC5vHA3FXYfu0ABHIB3H0yK+SP2d/F11H4506y1O4aZdYVrd3kYsdzqSmM9BuAwK+M4hxHtISpRP6G4I4V+r5RLF1F79T3v+3U9Pv3+4+xdZnuVjF3Dai9WI8qh2ygeqk5Bx6HH1rrPCHxCt5n+zxXW2XoYpv3cox/st1/Amsq9uJ7CRhDZvcj/pkyhvyYgfrWJqsOgeJZttyI7e/wAfMky+S7HscH5SfdTX5zaM48skbq8ZXRF8UvCml6xeQ3mmW0lpPOczmEsoYd+AR1/KtXQ/E2neCrC08M+EfDZGpXeIlYIN8krdMt1OT/jXkni3Q9S0p4iupT20GBk/aGVB9Du/SuL/AGd9J1j4lftMPqNvez3GjeAYWmkZ5XdXnZSgwGJGd74+imlHCc1OTctIq5piceoW5lqfrF4QTV7fw7p1r4gkWTUFiAmZDkb/AEz3x0zXWRyMnDZrkIL0W8ohfo1dXbSxTIFJ+hr5+niebbc+SxUXe7W5abZKMMeans5WjbynOPSs+VGThRk+tLFKcDecsO9UsQ0zDkuiDxHZqyi5Azjr9K8y1TSblQZbcZU88V69ezxXFm0LctiuYtCPJ8p+ShwfpXBjbc94s7cHOSjqeKz3+pWT4ckAUsfj2aywsrkV7Fd6PZXineo59q8/1j4f2twC0QyT+lcnM0elCdOWjG2vxPtgQGcHPHWuztdYstaRXBw+a+ddX+H95YzG4j3ELzx0q7o2oXemIBK20g8ZP+NaRrPuXPCwavE+m5PNVR5blRjtXxt+1X8CPDPxT8H32oJaRW3imyiaSzvY1CPIyjPlS4++r9MnlTyO4P054c8V2moxLa3bhW7GvIvj14nj0Tw9KLKQNM2AMHNelhMTOFSM6b1uc+GpyjOx/PNbTyRMUcFWXKup6qy8EH3rrdIvDEWcDhiM/lVPxzYzaf481y3ni8oy3LTAY4xN+8GPwam2I+T271+uTmmlJdT7nJK06kU5PVHR6/4rt7TR3t7ZCGYYZmPOB2FcP4T0c3kp1O7HLnIz2FY+vGXUtSg0uHnc2WPoo65rv7V4bKNI0PCD+Vbv93SUVu/yOdS+vY+U6nwU9F5y6/cdxDcTQqLfTkKk9So5NPPh2+uSZdQuBbp1+Y8/lXHz+LZoojHaHy+3y9T+NQ2l3fXA+0XUhIA6E1yKk0rs+ppY6lJ8sdTto7zRvB8y6la6ncxXMfR4ZPKP6Z/KvVvDf7S2haq8ekeIZWRzhVuWxgn/AGwoH5gV8dXW7xNrD20rlLO3OGCnG9vSuwj8HeEZ7YRyWZjboHjdg49+cj9K76U40bczd2fD5zgKmcRkqVKHJHRSbak2t7NJ6eujPuy6mSZfNiYOjAEEHIIPQiuflZd55ryvwDrdpoejrocl5NdQwHETS4LIp/hyMZA7eleirdRzASIchumeK9Kni6cup+TZjwRmeHnyui5Lo0r/AJXP/9T9g7DO0Cty64iQ1jacwCY710MqB7YE11ozMCQgnpV2wiUIzHrUMkYLj0FPuZBEoEZxQ0XF2JrSZo3b0rnte1QuTCpqeSV1HXGaxr+2hI8xmyTU8pt7V2sRaLM6SMAa7uHDxB2PNef6YVS5I7V3MDAx4HQUrGRK3KOAOxr5o+LPj21+FPw48VePrtFkOkW7vDG3SSdyEiX8XYZ9s19K7icgV+LP/BQT4vw6oLz4baDceZYabcoLxlPEl2Mkpx1EQ4P+0T6Vz4quqcGz6LhbI54/Fxppe6tZei/z2PgLV/Gt1471K513VpjdXOos0sjt1MjHLZ9CD2rmdM1W60FodRs3Mc+nyK6MP4WjOVP9a8o0nWmsb6S0ZyqO+UPZX7fn0r0G8vUkszqUallYbZkX19QBXxeKptTT6M/q/Ks1p4jBum7Jxun6H6F/Df8AaL8B+MtNVPEd7BomrQACWO4kEcch/vxMxAIPdc5HuOa7TVvH3wm1Y+W3ivTDInBU3Mf9Tivx4ll09mZt4K9s1mS6hEpOxiwFcdTh6nNuUW0fmlSvGm9Wn8z9Cvip8Wvh14ZSSPw5PDrmo7MR+Sd0Ebn+KSQcYH91ck+3WvbP+CaOs6XLceNNLuow+q6qqXYnJ+Z44mbzF29vmkDfj7V+PMt41yQJTtjU5xX6H/8ABNiTUrr4431zDGTZ22j3ZlbOAgdo1Xjvk4H69qWMyqFHCTV/U8utjYVVNNdNPzP2L1BeW28bCeR6VY068kjVUaXjtiq92GWeQY5+8B6jvXPeZJbSGQkIDz7Cvw/EVXCeh0wo88bHqNtO2dynd7GtTyxKm7G01wul6hE0ShmznuT+tdjbTCRRsO4V3YOopI82tQcWOaFxl88AVzzz28c23dgscfjXUMMhsHrXF6gxBlWJB0xk9c+tTi58peF95tMuiZ0ODzU4lD1l27qYFVziRQM59+acJdpwx/CueNTudTgiW9SGdCjjmvHvFOgBVMsIwBzXod9eyCVvK5AHSsLUJ/8AQWa6ABbgD3NYyrq9zqoQaseJRrNZMoikO8+9YPjLTW8Qi1t5GLb3Ctk5616dLpO7971Unp6fhWZYWiT6t5PXymVufbNaRxX2kd8dHqfJX7R37Lr+JvC5+IHhCP8A4m+jQEXUAH/HxbRgtlAP+WkYzx/EvHUDP5nf8eMDluqj+df0t6bbeVDDhcgDcRX4+ftxfAnTfBsk/wARPh/GINLnfN/YgYFs7n/Ww/8ATMscMv8AASMfKcD7zhTN3Nxw1Z77f5f5G+GzyNCnPnWybTPz8068iSe5v3+8TsX6DrTZtcZiY0z6Vw0V6/l+WCQMk/nXS6LatctuIzX6jVwyjeUj5jLM6q1+WjR0vv8AM6nRYGupfMlHy11V6/2eykCccGqdui2cQC8EdaXUpfNsmHrXmSlzSv0P07D4ZUMO49bHL6GjQKzfxSMWP412MN1k/O2O1c5bQsIVYDpVtMjmtai5ncyyqTw9OMI7HXReInsI82uEIH3sDP4ZrIm8T6tcSGXzHbPckmscxyXDhQCFrZhsZjGCiYFRaMT1I4itUemiP//V/YDTDkkZrq2ybbArlNPGHNdhb8xjPauwyZjSwtGMt3rJl3M2K3NTYuwC9BWK/WgZnairCDIODXLXLy7BuNdZqGfs/FcvcElMGhjRNpL/AOkjdXexEHp0rze0O24XnrXoFrkxZNQhyPnb9q347WXwH+F1zrUUqrrWqFrTTl7rIV+ebHpEvP8AvFR3r+cfxl4suPEWhw39zIZGu7qeUsxyzAYXcSeSSwbmvqD/AIKK/FS/+Jn7QbfD3R7jdZ+Hmi0mAA/J9odgZ3/7+NtPsor5M+McOm6H4mfwpoWPsOiQQWkZX+NkjBkkPu7lmPua8HGT55X6H7twdSWDwLil70knJ9bvZfJfizw+/f8A0lmz1rq9J166jt/Nik2yR8OP7w7H/GuCmkZpCXPNTW9wYm3Kfr9KznRUo2Zw4XN50q7nTdjXvFtru4kuMlHkYsdvTJ9qpvARysufqP8A69V541bEsf3T1HpVHqcCnGFkceJxScm3HVl9vJU/vn8w/wB1f61+nX/BO3W7Dwlc+JvEmqxsP7SNvYQEDhVUmWT9dlfmVpmnvd3KR+p7/wBfav2t+EHwX1f4deEfD5vYrWXTLxFmW6t5llWaSUbyxZeBx0HoK+a4nxkKdH2b+0dmBwkpRc5aJ/ifferzLc2yXtkcnjkeh61k6jYJLAk2DvYdOwz6VwcfitLWxntdskEZRlSQgAJwQG+bjjrXhXw3/aKmvJxZeN7xbpCxjWaOIhl2nAJRFyVYYPTIr8QxOHdXnnT1sezH91aMtD6pBeBo0jIAXv0xXUW2rJbL5gkHy9RXh2r/ABP8FWW2aPUluY5FDJ5CtKWU8gggAc/WuOk+M2nTSbdN06SbH8UzBB+S7j+tc2GpzVug63I9z7Gt9RiuACjZyOxrMurMS7ipr5usvFfxI1dorbRrX7D9pV3TZDsBRBl23y8YUck5rzXxt4l+Iej3T6Xq2sXdtdRuCyrNjI8tpFwUOCGwOnUV3ShzRtJHPgsNz1Y04PdpH2TEY2uliP3inGPVeufwxUN04iJznNfLPhKf4o6nYx6t4f1RrnyDHE4mmUsWdcgkSZGDySfrWwniX4ua7BC1mY1Fy8sSSIkKZaEEyZJPG0KSScCspYVi9ornrl9LtOx8lz93HX8azbyUvd2ttIdyqpcg/wCfavmjVvH/AMQ/CWrTWeqz+dcwsRJDcorgEf7SY4I5GDjvW1ofxw0TW7w2fiGE6PeRqoEykyQEPnrxuTp6Ee9czwFSzaV0dtLEwdrntt9cmKRmXIXB47CsbwYp1LWZinIZsZ9hWtPbQ6joYl0e6julm6SxsHVvoRXXfD7wwNGsmmnwZpep9PYVzpdDWdVKLaO5fFtas3Tivy+/br8ZtongK8sVYMNTP2cDvl+v6Zr9KfEF4sNswz0Ffhr+3/4ke817RNEV/kBlmIz6YUH9TX2XB+GVfMaUOi1+7U+ezeu6WDqVOu336HwJplu15dpBF/F19h617Fp9tDYQALxgda8x0C6s7MF2P70+1dDPrTyqETpX7Zj4SnLlWxPCGJoYWh7WTTm/wOqlvfMfYh71ZkfzICo5IrmNOUsN0p256ZrQmvDAwKkYFcLpWdkfc0M0bhz1Ope020vZJd0mRGM10SWcQJMhx3rlP+EsihTYy8ism78YO/Ea9OlJYepJ7HSuIsBh6due7PQ2ntLXJHQCst/EMKNt8wDHvXltzrd9ck/NgH0rKPnOdxPP1rphl/8AMz5/Gcftu2Hhof/W/YewUM58s7vpzXW2yfuTnivzRgt57E7rW4eA9crIVP6Gt228WeM7IA2/iC+QDoBM+PyJrjWbx6xPYeRSe0j79uMZINZnlAmviJfih8RLfOzWpnA/56Kjk/8AfSk1rW3xs+IUBCuYbv8A3oAP/QCtUs5pdUyHkFfo0fXl7AGhIHNclcwHGDXhkfx28YtHi70O1ZR1YO8f487hT/8Ahd8O0DUdMjhJ7pdK3H0KirWcYd/aM3keKX2b/NHssSbJ4zXUavrUPh3wvqviKcZj0q0nu2HqIIy+PxxXzpH8cPCAkXzo51wf4Qr/ANRXVah8Xfhl4n8K6v4bvbq4hGqWdxakNbt/y2jZM5XI4zT/ALSoNO00VTymvzx56btfXTofzlWdjJeePp/GHi1jJrOszXVzDE/VZJA8jSsPqTt/PsK4r4n2DPdRa4Blpv3c/wD10QcH/gQGfrmvbNY/Z++P9h4wh16LQG1COMyDzIriCQkOjIDt3hu+cYryDxFpPjXQbG50rx/ol3pU10Mp9pTC+YpyGU/mPoa8ShNOO9z+gMXj8G4zo0/d10ffRdfwPAdVi2Os6jiQdPQis5JR06V0F7bTPEUCM/lnOQpIGfeuXuIZE5HavQou6sz8wzSTjUdSnszUWYBSCetNhO9/asNZWzg1o29wqYJ5x6VpUp2Whx4fMVOSud7o0wt7mOCJFaS5BHzMF2j8fWv2V/YY8QP4v+EfiHwLqhMzaFel4EZssgdQ6hSO24HGOOa/EGxFxc3wuehPT2Ar9VP2GtTvvCniS2uL35bLxZbSmFs43NaS7Dn39K+E4vw6+ryfX+v0P0TLcf7bBuD0s7r+t/8Ahz6m+LGvpp/gLUdYltLi6XaoCR5DISeHcDpGh5cYPA59vknwp410+HSZbCV3huJopEhyMq7hDgKRzz2yBX6F/ETwfb6lLPa3UQezvFkaEqSCrSo0b5GcHAc4+tfHvww8HWKeLV8C+Iw9heRGSFpVgDq0iL08z7o3jpk55xjNfkuVVacaNSE17ydzTHpzlCUdmj6A+Hfw8s/ENg+oatp0k9jHZ+ZZ7ZPLWVo8fIdp3crnHTmrHjLS/Anh/Sk0mxjjla11GdHFtLGLh4SvmRF3ZXYhd2zggZHIJ6e4eEfB+h+G/CMXhKLff6eqvHukYbmyxOCVx93GBjnj1ri5vgXotxcGaO9nMIUFkQIDnrnJBx9K5qeLVmjmnT13MC2+M1taWtnMLOS91JDF5hnSOMLGsbQyRiSMbnV1IwWHBGeelefeKNG8QeJ9NHijTtCFrp0UcZiERD5EHG9z95i3IZtor2tPh54F0fCyWct4yj/lrISOvUgYGf8AOK6/RdU0qytlsNMthbwQkhUjXaBk5PH161lXzF6JnRhKUqclVhutT5F8FeK/Enhm1urLSLcuZVWNlmhdyFXcI2A4w4BKn3zxXW6V8VfEGgz3xu7ZGmvpPNXzQ6LG+7e2Ezhg3fPOOM44r61i1PaglXqeueKdLcwXiJFexR3AB6Oob9DVf2glsyMRBSm5KNk+nY/OTx7r1lrGrvfwww2ZaONFhtzlcqNueeSx7nuaXwZ8HfFfibUhqeqL/ZemugBeRT5z4ORsj7Dk8tj2zX6HXGh+GDcx3Q0i2SVCOfJQEH2IFOmhX7JPJGuCvQAdlrWeZcqagtTKFK9rnH+DPCOh+FNJTS9HhKRk73ZjuZ3xgsx9Tj6V3c1+un2gyOvpWfaENbrMo2hq1mhhuYcSjPtXlTqOXvGzSTszgdTvWvYnPY5P5V+B/wC2zqZv/jNJYrjFhaxrgerszH9MV+/+u2MNpZyyKu3INfzbftD6wPEPxp8WX6tuRLwwKc54hAT+YNfo3hfScsZOo+kfzZ81xdU/2WMF1f5HhyBkIPpWrDcxgj5itVvKNdd4Z0e01GWVbuPeqr6kck+1fteJrRjFykfEZcqimowKi3chQBJs0NJdPxuB/Guxl8Dac4zbyyRE+uGFRR+AL48292p/3sivNhjKD2Z9M8TiFpNfcziZYLhzzj86alo4OCoP413L/D/xEPuMjfRhTF8AeJs5G0H13Ct1iIfzIw543u4swrbSLubpGqL6s4UfrWwuixKoDJG59fPA/pWrD8OPE8p+aaNM9yxP8qtR/DTxNIgeO4Vwe4DY/WuWrXj/ADpHsYfMKEV/Db+7/I//1/pu8vtAswfNvQ5HURJk/mcVy914w0WP/j3tprgk4G5to/QV2MXgvSGUSNKsmB/eGP0qdfDugWYJ/d/JyTjNfA1MRU22P02nSprfU8vPi/U5D/oOmIgJ7oWP5nNVJtU8dX3yQr5CnH3Rtx+Vdbq/jz4d+H1kW51GJinVIf3jDHqIwcfjiuK0L4tv49v30z4XaBJrTxHbJcO4FtFnj95JHvRf91nUnsM1pHK8VUXM7pd3ovxIlmuGp6aN+Wv5EY8L+Ir1/M1K7Y8dNxpZ/C1npsJuNQukt405LyuFX82IFex6R8NfE+p68uh+Ntau7OSS2FyY9Is/JtVXcV2PeyiT5+PurtOOaw/E9h4Z+G3iGS2h+HUmoW0NtLL/AG7qpm1GPzwp8lFGJmyz4BGFx2rCng6bnyRlzPy/zdvwTB5vNq8Y29f+AeRwX2g3D+ToEV3r8oOMadbSXAz7y4EQ/FqzPFuveL/CVotzqOhQ+HopQTG+qTr5rgEZKwxlQSM5I8zgc9M19N+IPFvj6+8Fw32h6HaeHPEWjCL7VPqYeKztFmVWeWAqrRTIBlWBZWXsM8Vqax4O0L4veGU1fxbo2neIde0RRJElhfOkdwrpwDJtVo/NGTsYccZOOa78KqNOUZVafu3s9bvy7Kz7s46+NrS057emn+bPhDxdo/xZvLg6Jrniqy8Nw3VtDcpMXuRA8FyP3TIbKAk7icAeeTniuZuP2Bv7T/tg+NPiE0MmlLb3E93b6POwdLhC6ok0km6UnjOeh61+i6aH8MbGCxj0+3sdL8U2hhks9Kkv9xjm4KQyGJ2EiK3K5yFwMYAFbNt4z8Z+GL+8vPirqllYq6stppdnF9qll4JEgEZMu3g5zjnqQK1qYickvZK3lZK/okn+djmVS3n6ts+Cv2ff2ZvDPw88Q+IV0TUdY1lr+wUxG5tIYY5TES5BDvtTnjcWxX0r4r/ZW0LW9AGqx2EGv6i4jK2scVoEwxG/96/yttGcf3iMV3/h7wB4b1A2tz4nGrINRgnlguL29U2MD3B2jy43kJ8xk4VTvAU4OCSK6/SZfGehaq3hfw54elm0ZjHEup3p+eRlUZkcoeYhjYoCg46cZrnxuFo1KvtKb163dvxv/wAE64ZnVhFQi9D4e8W/sDfAO91jSl1O61PSrzXpFgjjhs7UW0ErBjsaRAIy3yn5VYt7Yrh9f/4JY6N9vurLwn4ohlkgjEpW8tZoFCn1mRmjzx0HI7iv0N8EQ6w/iiJ/GWm6NpT2fnGysbW8Vp1lJOcQhirNtAO9uRnjAzVvVNe+JPiq28TaDpel3FlIi7rSR2ETRyDGxFkHlqRuG8kseMjnpXV7GUWoRqWS3d1bVnF9YblzW/A/KWD/AIJjfEa4Vxp+oaW6HA3RX7NkH/tka+l9H/Zf+KXhDRfBmhw2On+f4UWSO2eG8QSXPmEs+VfBJJJJwPwr7w+GPhbWfDWjXMOv2tvBq11sM93aszLO5XG5g5JDg53HoxOR3ryrwt8JPHnhfx3ZTab9ji0XTXnD3l1J9pubtbhgzny1VBE2em0jvksOvm4nBUsRzxq1fh289H/wx6dHOq1N+6kc7qF3r+n6N/ZfjHRZ7eZMGOZMlVcdCGIAI9eeRXiul+BfCUet3Gs67JfXL3MrTMgKhNzHJGUwxAr7z8dWHiaSIS+DRsnuvlvH+V2MKqdqxLKdgbPbgHuawtW+GGk6/o8N+lr/AGPq7ou9Y1/dmQnHzRoWABPJKnjv0r4nFcLwjDnoy36dT2MJxDGT5a0bHmFn4m8KwWdvY2btbxwrsVTG4wB2zg/zro7TxFof2WRPt0O5uxcKcfQ4ryu+0bUNFvJrPVLdopIW2klTtOO6noQfWqbwrKdsuFUck+1fNPK4p2u0e++WSuj1GXVNMUGMMGjHOY2Dbj+tYuoX+nfZAEiAfu3Q1wsdhHdyqwiCxAkIoHzN/wDrr0Sx+HsD2X9qa7cx6ZbYOwuTuY9gF4rD/VurO84vRdbaffcznjqVKylv/XQ5e3v7aKUI8zMG5I9MfSuoW5tbjL+ZgqnA7jPfFcFqumaUl68OkGUpkfvJD8xx149z0zyBUIhuohmG5PHcgHNcDyOpbSSOp14NX2PWYplRUSaZW4yD6YNX57mFUZw4CyZIx0ryPTdP8Ta1clbGSMpCMM8gKoue3Hc/SrMnhP4gwYbYt1GpJURzAD/x7Brmq4OcW43V/Uy5qd9ZHqdu1s1qtuMKyjOPrQshjYKK8mt7bx7Z3IuptJnMSDaVTD5H5110HiiG3TGo6df27DrutnI/Nc1H1Oq42Sv6Wf5Gc6tNPSRyvxl8WW/hjwVq2uXkgSGytpZTnj7qk4r+ZK7uLrXNXuL+XLT387yt/vSsWP6mv3A/bPvPG3jXwCfCPw20S71NtSkVblo12lIV+YjDlSdxAHFfkza/Br4oaLqEcur+FdStkjyxZrWQjgeoBr9e8PsOsLhKlao7Sk9utkfJcQXrVYU47L9Tn7fwGdTnZNPm8vYm4h+Rntz711HhzwR4kslnDWTS5YANHgggCu98PaVe2EE73tvJAWcDEiMh+Ue4HrXf6fqVrp1rtbdNcTORFDEN0khA6KPT1JwB3Nd2KzjESbowXMduHyvDxXtZOx5LPo+q2Y/0m0kjGM8qcV0egaDq2q7RZWrup/jI2oPqx4rvVlmnZbrxDKBGxxFZ253Ln0Zxgyt67cIO5Na9x4laO2+QLDCOFVOn+6MfePrjge9exg8tqOKdbR+R5OKx8L2pbeZUt/BMdtHu1K9VW7rGM4/E/wCFNl0XREysdy4I9cf4Vyd7rd1cORk8c/h71mf21acRrc+dKeqxjIX6sePyzXoPCRS0OD6029z13QNN8NoRHfAzSk8FziPH0Hr0OcivTYPK8seWgRP4VUAADsMDivmq11PORu6967ux8S30dsqIwZR0zgmvls1yqU5Xg/vPocuzSMFaSP/Q+c9Q/aU8bPrE2geBvB+sXWpx/ei+yy+YgboSGU4B9TEPrWpaeCv20vi5dxWmo6edAs5OQb2ZQEB7lGLhcd8RCvmDxH8M/jD4BllvfDviQyWrDBcXZtyyjoGSVgD9ORX6QfsseN/Hw/Z2uvFHiTVfP1e41Wawine2juraCC2jjKwyrF/DIXY5APSuZwlBpQir9f6tf8T2XUUleUnbz1/W34GX4Z+BXw1+H+6f4gW83xW8Q2zqDEl59otEZeZVFopBAQBjudSDjotfoD8M49N8SR2vinwhe3Wl+GYYXhh0UWsFrbJIcfvVEahiAPu5PXmvmnS/hTq+t2M/i7w1b6do15KzTC7iuJXtWicZaMqwWSJlI5ypGDjNejfClPiNp3jMXMy6Xe6ddwqtw2kRW8ilk6JuWVG34wSzA8YzmuHNcup1aUnCpeS3u/wtqvne50UcTKLXMrLyLPinxP450XW7vTdH1nVr+OCRGhkTTRcROxIIh3wgtu7HcgHckV6tZXUXxLin0XVJbmzmthHiO0kubGdZ9oZg7oxwATjOCBjqa9QubS+h8MTnTmvtMuW3MpwLy4Uk84VnYH2Abjt6Vzkes2ng+0+0+ItfuJL1kylvdxxR7yehZYEdhk+5NeRSpQqQioxtNdt356L9TSddxbfQ4ix8CeF9Mu70S6xNDeXciC4e7uXnWGRAV2xTBoS0jA8khveuq0TRbPwTFJrviDxDHe290BBkGNIZD/fcscvJ2yXbjgAVz+n65fXWnya5B4bs3muJN8k8eba3Kbuv2mbaSw7oFAzzmu7nk1zWLGDzL3R44kQS7mjFywJyVZF3bM44Hqea761CytLbrtfT72jBV5PqZOjaDoF3rR8U+CLfR4LBI3/fRwKsj3EuNzM/lgqMcEBsnvUHi641qbSbnTfDVxBO9xGyXd5DepDNE7YG233s+xjzjOFU8jnitrXY5NY0e20v+x5rp3jJNxKkdqIm7N8+VBPoM49K88v/AAxFY3lxoeh6VqVzqs8MbyXCXQhs0jQ7sJKFQM2e2zcT3ArD2cZLmb1W3/Bd0OFRp2Rz03wx1vXtKt9J8WzLdXltcK1g947Xs1pbJgO/noFLSSjOS574BwMV6dovgldAujHp+qzro/loi6dsiaEFRgnzHVpSG6kFuvftXZJbiyhSzjZmSIAAuxZm9yT1zTgCa+erY2pL3b6HqR1Od0fwb4O8PXsmpaFolpY3k27fPFCqysGO5gX+9gnnGa6rzWYdT+dRiM9akC1ySlKTvJl2QFtxp4Zu1Jg04A1DQ1ZEgfHWrUTZNU9pqxGMd6IaMJSVjSCQzjybmJZ424KuAw/I15X45+Hfgy4tvtlvIuk3KkMyoMxOPdP4fbH5V3z6hbib7KtwiSkZxkb8ey9e/WvmX4vX0XiS+sNB8Oa/Gsdpch9RigHmO8a5+Rpg2AS2Pl+ufSpx1enCn78U/X+rnVltGpKquSTXp/Vixdavp2gwEeELeJ7vhftV38xPPOxBnArnrzUtRv2Z7ucySt1kJyxz2XPAH0qt9ljHyAfIvAx2H+FU5gFxsJCr3xxXylfFzq253ounRfI+wo4WFO7W/fqUZVSKM7erf1qzonh/Udfug0hMFlH9+QdWP91fU+/aul0fwy+qxre3rmK3P3QvDP789B7969FijhtoUt7dQiIMKBXiY3MeROMNypz7ENnZW2n262logiiToB1J9Se5q4pA5qEk015AgBIJyQMDk49fpXzc22zL1Pk/4nWPjHTNXkbV9QuLvTp2Jt5QxWMKeQhVcAMv056iuU0LQfFms3CLpBvTz/rUaTao/wB7IH619sFbe8h2TwiSNsNtkTjI5HDVaDEKEUbVHQDgV+rYXxalQwUcMsLFzStfZevKlv31PkqvCfPXdX2rt2/4J5ymi+Lf7JjtLN47K42qHnupXuskdSsDGRRkesldH/wjejywxi+tIJpwoDyrEI9zY5OF6ZPbNbc82wHuazvPdztXknoBX5PjM9qVXslrfTf79/lex9ZRwPKrpnKX/wAP/C16CvltET6YdfycGuD8QfCD4c6bpd5r/iY6bZ6daxk3FzdWsUarEOTufjj27npzXS/E/wCLngT4KeH/APhIfHd75ckuRbWkWHubh/7saZ/NjhR3NfHto3xS/aQvYPEXxMtf7I8GW8/2nTNAUY87bzHLdt1kwOQDgZ5wB1+nyJY2cVVc3GPf/K5z1knojrLf4WfBjxbZprenaFG9reRgxSmOS2d4T935AwKgjkD061kaj+zN8MtR/fpBcWr42jy7h8Ko6bQ24D8q91j08WkKxM4TaAAOmPy/QVBcXEUfKBsjGM+1fc0sfXW0395xzwtN7xR8ka1+xv4V1EkW+uajbx/88/3Tr+OFBP51yk/7GMlsGTTvEuAvTzbUfzV6+0n1WcA7OmfSmfariVmIHJ6++evFdkc2xC+0c8sBSf2T4QuP2SPGlsha11mzuG7ArJH09eGrGP7OnxUtWMKxWcoB+8J+D+aiv0QR5BjcOB0JqXEh52/pmreb1nvZiWX0+h//0fzc1vSfiV4sJji0y6dT3dSg/NsV7j+zJ8c9a/Zm8R33gr4iWP8AaXg/XTHNfW8bq8lpMv3J485G8D7y9CMd8V7y0ayOwYcE4xXx/wDGDTLRfFWosFOZEjY/Uxj/AAr5bCZ/WxFbkkklY+5xWQ0aFLmTbP3M8KzfDn4wpa+KPDOuNrFlONjfYbmVRGv8JktM5jde5XI98cV1ul+FPA/hPxHHYPojQXuZHS9gMUDsHBGAUKY45PQ1/Nn4V8X+KfAeppqvg/VbjSbqM5DwSFD+IHB/Gv1a/ZQ/aX+KHxa1ZvC/j6e11WCJABM8AE5we7A7T/3zXRmGMqUFzPWPldM82jglU0T1P0o0Dw94b8PJKdLvmkvceZbxzXTTDYMniKPZuzz1BPuar6drPjrVL+6tI9LW0DJmC6nDSbJT1JDIhVQM4+Tk8Zqjoev3lxrT6WY4US2YpG6xgSKMdQegP0FdPqWkWOqaVJLeq0h84SNmR8MyHjdz09untXDhsxhVfNJXb762/FEVsHOGlzlrnTIFhkuPi3JZ3b27YgwoE8oz8vl+WwcgnjbtrlJdb+HPinWZJvDPheDVdbjZS0d4/kAbR8uBl145+UDPoM12MOsDUfGgS+sLSaTT4S1vKYv3keOgBB6fUV6Dr1qmmWM+v6efs900IDbEQKxyDk/KTn3zXq06+ut7vzsvuXQ4p0vuPGJdb03Wkl1Dx94euI7jT9oa3sbia7SIr0DxRgInH3sk+/pXpqa3LeaEmr6Q62V1eRLFaW1+xigEnbC7VdjjsM5xxSeAfttzd6vNf39xdm2lWOMSvlVV0DEbVABOe5596zfF6aVqXie00zVtJs9QUDCyXEXmSJnJ+Uk4HI9K4cwcVPkatbzbXyTNqF7XR5t8R/H+qfCvwjrfjSWdNdt/DcSzalY+UyMgc5JgmUADqPlZSMdweTwnhz9sn4JaxY215rV7P4de4VW2XkRKjcM8vHuH5gV774j+G+g6npGtPez3csN3bzefbtMTDMvlFQjoQcoOyfdB5xX4rftL/Cvwr4E0ex17wwJ7R7zAeDzN0A4/hVgSPpuxXNhcuo4moqd2mz2KcrQbkj9gdL+P3wQ1lc6f440p89muVQ/k+K6mL4m/DWUZi8V6U30vIf8A4qv5a55NzEsqk/T/AAqhcvsVSoxn3P8AjXsT4F7Vfw/4Jh9ajtY/qil+J3w0gH73xXpa/wDb5F/8VWBqHx5+Cmk+b/aHjfSYjDw3+lIxB/AnP4V/LySvmKpXOfUn/GnSskb4WJOmeRmsP9SLPWt+H/BK+sx/l/H/AIB/RD4k/br/AGa/Dm5U8Rtqsq/wWUDy5I9+BXzZ4u/4KZ6WnnJ4C8HTXbD/AFcuoyiGMe/lplj+Jr8g/DcX9o6hHZzOUjkYA7MA8/hX6r/Cb9lf4RXWi2niDWbK41a4kUOVuZyYs/7iBAR9c1ljcnwWAh7StzS+7/gGtFSqS5YJI+ZvEP7R37Sv7QbXmleGDLYy3ThJYdJi+zRlDwfOnHzlQOu58e1fop8F/B03hX4caHp2pSpcajb2iQ3cinKmVWYkbj97Bbqetbs2i6N4a0WTT/D1hBpttEPljt41jXgdwoGfxrsLHw/pGreFLbRdTtxc2dxCjOjZ5Y4bORg5ycg9q/Os8ziGLahSpqEV979WfV5Zg/YpuUrtl9oWCAlTjtxyc8f/AKqv6d4XnnmWW7Xy7YHdsP3m7gEfzr5E+I8GofDXWba38J6xf20Mqk7GuWcLjsuecfUmsvTfjZ8SbXAOrtcKO0yK/wCpGf1r4rEY5x91I+r/ALHqTipQkvmfoQVwNqgBRwAOAAPSqksEzD90QDnnNfNfgv4t+KdduI7bUEtmDEAlY2U/o2K+i7WRpYw7d68KeKu9jya+FnSdmyVIrrA37WAH8Pc/0qsYWZSbuP5Vweu7pz25rE8Za/feGvC99q+nhGng27RICy8sB0BH86zdA8R6prVjZXV1IEadAzCMbRk+nU1FXFKKvbcmjhpyXMrWOpTVbU5wSABnkVa+2xBA4+YH0qG9srea2S5K7ZD1K+o749awb6IWbRwwscSfMxJySc15lapJG9OjCaVi5JLNczNHEvU/pXl3xi+OXgf4CeH01PxPIbrUrwN9isIsGa4de/8AsRg9XP4ZPFdd8Q9evPBHw28Q+LNHSN77S7KW4iEwLIXRcjcAQSPbIr8TvhPqWo/HT492WsfE66k1i4uGedt5wn7obkQL0WNT0UYFfRcM8Owr81eq/djuurOTE4lv3I7H1n8J/hLqfjXxFN8avi4Df6xq8rXdrazkyRWkbncg2tkcDAVeijtmvsFtwUrb9ex4/wA9KitQNqKOFVSABwMdOlaaopiLY6c19pCrKbu/kuxhNWOdlS7lKrIp444psli7lUPbqP8AGugGA4Tswz+lVpCQyAdx/jXTExkY5s0U7drFSOe3NP8AssMLbzjnr0IxVtWYNs3EjOac0m4kFF6DnHvW0WSZzNz8p4z1xnP0pUEQBDvzn1rWghilRXZepx7UxbeFy5Zc4OKpsln/2Q==" alt="哥哥" class="id-photo">
+          <div class="id-name">哥哥</div>
+          <div class="id-grade">四年级</div>
+        </div>
+        <div class="id-card" data-child="弟弟">
+          <img src="data:image/jpeg;base64,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" alt="弟弟" class="id-photo">
+          <div class="id-name">弟弟</div>
+          <div class="id-grade">一年级</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOME -->
+  <section id="screen-home" class="screen active">
+    <h1>单词闯关乐园</h1>
+    <p class="subtitle">复习单词 · 练习句子 · 熟悉键盘</p>
+
+    <div class="card">
+      <div class="topbar">
+        <span class="section-label">📚 选择词库</span>
+        <span>
+          <button class="btn gray small" id="switchIdentityBtn">🔄 切换</button>
+        </span>
+      </div>
+      <div id="bankList" class="grid"></div>
+      <p class="hint">已内置哥哥(四下)和弟弟(一下)全部词库,共 346 条。在欢迎页选身份,或点「🔄 切换」换人。进度和错题自动记住。</p>
+    </div>
+
+    <div class="card">
+      <div class="btn-row">
+        <button class="btn blue small filebtn">导入备份<input type="file" id="importBackup" accept=".json"></button>
+        <button class="btn purple small" id="exportBackup">导出备份</button>
+      </div>
+      <p class="hint">进度和错题本存在本机浏览器。换设备时用"导出备份 / 导入备份"迁移。</p>
+    </div>
+  </section>
+
+  <!-- MODE SELECT -->
+  <section id="screen-mode" class="screen">
+    <div class="topbar">
+      <button class="btn gray small" data-go="home">← 返回</button>
+      <span class="crumbs" id="modeCrumbs"></span>
+    </div>
+    <h1 style="font-size:28px">选择闯关模式</h1>
+    <div class="grid" id="modeGrid"></div>
+
+    <div class="card" id="wrongbankCard">
+      <div class="topbar"><span class="section-label" id="wrongLabel">📒 错题本</span><span id="wrongCount" class="badge">0 题</span></div>
+      <p class="hint">第一次没做对、或答得太慢的题会进这里。连续答对 3 次就毕业!</p>
+      <div class="btn-row" style="justify-content:flex-start"><button class="btn orange" id="practiceWrong">开始练习错题本</button></div>
+    </div>
+
+    <div class="card">
+      <label>每关题数:</label>
+      <select id="qcount">
+        <option value="5">5 题</option>
+        <option value="10" selected>10 题</option>
+        <option value="15">15 题</option>
+        <option value="0">全部(考前查缺补漏)</option>
+      </select>
+      <div class="btn-row" style="margin-top:12px;justify-content:flex-start;align-items:center;gap:10px">
+        <button class="btn gray small" id="hintToggle">💡 字母提示：关</button>
+        <span class="hint" style="margin:0">学习时打开看键位，闯关时关掉考记忆</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="screen-game" class="screen">
+    <div class="topbar">
+      <button class="btn gray small" data-go="mode">← 退出</button>
+      <span class="crumbs" id="gameCrumbs"></span>
+    </div>
+    <div class="qmeta"><span id="qProgress">第 1 / 10 题</span><span id="qScore">⭐ 0</span></div>
+    <div class="progressbar"><div id="qbar"></div></div>
+
+    <div class="card" id="gameCard"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="keyboard" id="keyboard"></div>
+    <input class="hidden-input" id="hiddenInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  </section>
+
+  <!-- RESULT -->
+  <section id="screen-result" class="screen">
+    <h1 style="font-size:30px">闯关结果</h1>
+    <div class="card">
+      <div class="result-emoji" id="resultEmoji">🎉</div>
+      <div class="stars" id="resultStars">⭐⭐⭐</div>
+      <div class="stat-line" id="resultScore"></div>
+      <div class="stat-line" id="resultTime"></div>
+      <div class="stat-line" id="resultWrong"></div>
+      <div class="btn-row" style="margin-top:18px">
+        <button class="btn green" id="againBtn">🔁 再来一关</button>
+        <button class="btn blue" data-go="mode">📋 换模式</button>
+        <button class="btn gray" data-go="home">🏠 回首页</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+
+
+
+
+<script>
+/* =========================================================
+   单词闯关乐园 — 全部逻辑(自包含,无外部依赖)
+   ========================================================= */
+
+const LS_KEY = "wordReviewTool.local.v1"; // 本地版独立存储
+// 内嵌哥哥(四下)+弟弟(一下)精品词库(7 子库,共 346 条)
+const EMBEDDED_BANKS = [{"meta":{"child":"哥哥","title":"四下 Unit 1-2 People at work / How do you feel","grade":4},"items":[{"word":"doctor","meaning":"医生","ipa":"/ˈdɑːktər/","type":"word","example":"My father is a doctor.","exampleMeaning":"我爸爸是医生。"},{"word":"fireman","meaning":"消防队员","ipa":"/ˈfaɪərmən/","type":"word","example":"A fireman puts out fires.","exampleMeaning":"消防员灭火。"},{"word":"farmer","meaning":"农民","ipa":"/ˈfɑːrmər/","type":"word","example":"He works on a farm.","exampleMeaning":"他在农场工作。"},{"word":"cook","meaning":"厨师","ipa":"/kʊk/","type":"word","example":"The cook makes dinner.","exampleMeaning":"厨师做晚饭。"},{"word":"police","meaning":"警察","ipa":"/pəˈliːs/","type":"word","example":"The police help people.","exampleMeaning":"警察帮助人们。"},{"word":"painter","meaning":"画家","ipa":"/ˈpeɪntər/","type":"word","example":"Is he a painter?","exampleMeaning":"他是画家吗?"},{"word":"scientist","meaning":"科学家","ipa":"/ˈsaɪəntɪst/","type":"word","example":"He's a scientist.","exampleMeaning":"他是科学家。"},{"word":"writer","meaning":"作家","ipa":"/ˈraɪtər/","type":"word","example":"She is a writer.","exampleMeaning":"她是作家。"},{"word":"nurse","meaning":"护士","ipa":"/nɜːrs/","type":"word","example":"The nurse helps the doctor.","exampleMeaning":"护士协助医生。"},{"word":"driver","meaning":"司机","ipa":"/ˈdraɪvər/","type":"word","example":"Bus drivers work at night.","exampleMeaning":"公交车司机夜里工作。"},{"word":"worker","meaning":"工人","ipa":"/ˈwɜːrkər/","type":"word","example":"He is a worker.","exampleMeaning":"他是工人。"},{"word":"postman","meaning":"邮递员","ipa":"/ˈpoʊstmən/","type":"word","example":"The postman brings letters.","exampleMeaning":"邮递员送信。"},{"word":"aunt","meaning":"姑母;阿姨","ipa":"/ænt/","type":"word","example":"My aunt is a teacher.","exampleMeaning":"我阿姨是老师。"},{"word":"uncle","meaning":"叔叔;伯伯","ipa":"/ˈʌŋkl/","type":"word","example":"Uncle Jake likes to bake.","exampleMeaning":"杰克叔叔喜欢烘焙。"},{"word":"station","meaning":"所;站;台;局","ipa":"/ˈsteɪʃn/","type":"word","example":"I want to work in a fire station.","exampleMeaning":"我想在消防站工作。"},{"word":"fire","meaning":"火","ipa":"/ˈfaɪər/","type":"word","example":"Fire is hot.","exampleMeaning":"火是热的。"},{"word":"restaurant","meaning":"餐馆","ipa":"/ˈrestrɑːnt/","type":"word","example":"We eat at a restaurant.","exampleMeaning":"我们在餐馆吃饭。"},{"word":"owl","meaning":"猫头鹰","ipa":"/aʊl/","type":"word","example":"The owl comes out at night.","exampleMeaning":"猫头鹰夜里出来。"},{"word":"field","meaning":"田地;田野","ipa":"/fiːld/","type":"word","example":"He often works in the fields.","exampleMeaning":"他常在田里干活。"},{"word":"bee","meaning":"蜜蜂","ipa":"/biː/","type":"word","example":"A bee makes honey.","exampleMeaning":"蜜蜂酿蜜。"},{"word":"taxi","meaning":"出租车","ipa":"/ˈtæksi/","type":"word","example":"I take a taxi home.","exampleMeaning":"我打车回家。"},{"word":"brush","meaning":"刷子","ipa":"/brʌʃ/","type":"word","example":"Scientists use brushes a lot.","exampleMeaning":"科学家经常用刷子。"},{"word":"mountain","meaning":"高山","ipa":"/ˈmaʊntən/","type":"word","example":"He brings letters to people on mountains.","exampleMeaning":"他把信送到山上的人们那里。"},{"word":"night","meaning":"夜晚","ipa":"/naɪt/","type":"word","example":"They work at night.","exampleMeaning":"他们夜里工作。"},{"word":"life","meaning":"生活","ipa":"/laɪf/","type":"word","example":"Life is good.","exampleMeaning":"生活很美好。"},{"word":"letter","meaning":"信;函","ipa":"/ˈletər/","type":"word","example":"He brings letters to people.","exampleMeaning":"他给人们送信。"},{"word":"often","meaning":"经常","ipa":"/ˈɔːfn/","type":"word","example":"He often works in the fields.","exampleMeaning":"他经常在田里干活。"},{"word":"bake","meaning":"烘焙","ipa":"/beɪk/","type":"word","example":"Uncle Jake likes to bake.","exampleMeaning":"杰克叔叔喜欢烘焙。"},{"word":"bring","meaning":"带来;拿来","ipa":"/brɪŋ/","type":"word","example":"He brings letters to people.","exampleMeaning":"他给人们送信。"},{"word":"use","meaning":"使用","ipa":"/juːz/","type":"word","example":"Scientists use brushes a lot.","exampleMeaning":"科学家经常使用刷子。"},{"word":"light","meaning":"照亮","ipa":"/laɪt/","type":"word","example":"They light up the night.","exampleMeaning":"他们照亮夜晚。"},{"word":"safe","meaning":"安全的","ipa":"/seɪf/","type":"word","example":"It is safe here.","exampleMeaning":"这里很安全。"},{"word":"poor","meaning":"贫穷的","ipa":"/pʊr/","type":"word","example":"The poor man has no money.","exampleMeaning":"这个穷人没有钱。"},{"word":"same","meaning":"相同的","ipa":"/seɪm/","type":"word","example":"We are in the same class.","exampleMeaning":"我们在同一个班。"},{"word":"come out","meaning":"出来","ipa":"/kʌm aʊt/","type":"phrase","example":"I come out at night.","exampleMeaning":"我夜里出来。"},{"word":"light up","meaning":"点亮","ipa":"/laɪt ʌp/","type":"phrase","example":"They light up the night for others.","exampleMeaning":"他们为别人点亮夜晚。"},{"word":"give up","meaning":"放弃","ipa":"/ɡɪv ʌp/","type":"phrase","example":"He never gives up.","exampleMeaning":"他从不放弃。"},{"word":"sad","meaning":"难过的","ipa":"/sæd/","type":"word","example":"She is sad.","exampleMeaning":"她很难过。"},{"word":"angry","meaning":"生气的","ipa":"/ˈæŋɡri/","type":"word","example":"Don't be angry.","exampleMeaning":"别生气。"},{"word":"scared","meaning":"害怕的","ipa":"/skerd/","type":"word","example":"I am scared.","exampleMeaning":"我害怕。"},{"word":"excited","meaning":"兴奋的","ipa":"/ɪkˈsaɪtɪd/","type":"word","example":"She is excited.","exampleMeaning":"她很兴奋。"},{"word":"surprised","meaning":"吃惊的","ipa":"/sərˈpraɪzd/","type":"word","example":"I'm surprised!","exampleMeaning":"我很吃惊!"},{"word":"worried","meaning":"担心的","ipa":"/ˈwɜːrid/","type":"word","example":"Don't worry about your clothes.","exampleMeaning":"别担心你的衣服。"},{"word":"sorry","meaning":"抱歉的","ipa":"/ˈsɑːri/","type":"word","example":"You should say sorry.","exampleMeaning":"你应该道歉。"},{"word":"proud","meaning":"骄傲的","ipa":"/praʊd/","type":"word","example":"I am proud of you.","exampleMeaning":"我为你骄傲。"},{"word":"laugh","meaning":"大笑","ipa":"/læf/","type":"word","example":"They laugh together.","exampleMeaning":"他们一起大笑。"},{"word":"cry","meaning":"哭泣","ipa":"/kraɪ/","type":"word","example":"Why are you crying?","exampleMeaning":"你为什么哭?"},{"word":"frown","meaning":"皱眉","ipa":"/fraʊn/","type":"word","example":"Don't frown.","exampleMeaning":"别皱眉。"},{"word":"cough","meaning":"咳嗽","ipa":"/kɔːf/","type":"word","example":"Is she coughing?","exampleMeaning":"她在咳嗽吗?"},{"word":"practise","meaning":"练习","ipa":"/ˈpræktɪs/","type":"word","example":"I practise every day.","exampleMeaning":"我每天练习。"},{"word":"shout","meaning":"大喊","ipa":"/ʃaʊt/","type":"word","example":"Jay is shouting at Ray.","exampleMeaning":"杰伊在朝雷大喊。"},{"word":"break","meaning":"打碎","ipa":"/breɪk/","type":"word","example":"Don't break the cup.","exampleMeaning":"别把杯子打碎了。"},{"word":"hit","meaning":"碰撞","ipa":"/hɪt/","type":"word","example":"The ball hit the window.","exampleMeaning":"球撞到了窗户。"},{"word":"opera","meaning":"歌剧","ipa":"/ˈɑːprə/","type":"word","example":"She watches Beijing opera.","exampleMeaning":"她看京剧。"},{"word":"next","meaning":"下次的","ipa":"/nekst/","type":"word","example":"See you next time.","exampleMeaning":"下次见。"},{"word":"better","meaning":"好转","ipa":"/ˈbetər/","type":"word","example":"I'm feeling better now.","exampleMeaning":"我现在感觉好些了。"},{"word":"gift","meaning":"礼物","ipa":"/ɡɪft/","type":"word","example":"The gift is for my dad.","exampleMeaning":"这礼物是给我爸爸的。"},{"word":"model","meaning":"模型","ipa":"/ˈmɑːdl/","type":"word","example":"I made a model plane.","exampleMeaning":"我做了一架模型飞机。"},{"word":"bang","meaning":"砰","ipa":"/bæŋ/","type":"word","example":"Bang! The door closed.","exampleMeaning":"砰!门关上了。"},{"word":"should","meaning":"应该","ipa":"/ʃʊd/","type":"word","example":"You should say sorry.","exampleMeaning":"你应该道歉。"},{"word":"feeling","meaning":"感触","ipa":"/ˈfiːlɪŋ/","type":"word","example":"Tell me your feeling.","exampleMeaning":"告诉我你的感受。"},{"word":"huge","meaning":"巨大的","ipa":"/hjuːdʒ/","type":"word","example":"It's a huge cake.","exampleMeaning":"这是个巨大的蛋糕。"},{"word":"street","meaning":"大街","ipa":"/striːt/","type":"word","example":"Jay runs back to his room.","exampleMeaning":"杰伊跑回他的房间。"},{"word":"take part in","meaning":"参加","ipa":"/teɪk pɑːrt ɪn/","type":"phrase","example":"She can't take part in the show today.","exampleMeaning":"她今天不能参加演出了。"},{"word":"run back","meaning":"跑回","ipa":"/rʌn bæk/","type":"phrase","example":"Jay runs back to his room.","exampleMeaning":"杰伊跑回他的房间。"},{"word":"shout at","meaning":"对……大喊大叫","ipa":"/ʃaʊt æt/","type":"phrase","example":"I shouldn't shout at you.","exampleMeaning":"我不该对你大喊大叫。"},{"word":"What does he do?","meaning":"他是做什么的?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"He's a scientist.","meaning":"他是科学家。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Is he a painter?","meaning":"他是画家吗?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"He often works in the fields.","meaning":"他经常在田里干活。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Is she coughing?","meaning":"她在咳嗽吗?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Jay is shouting at Ray.","meaning":"杰伊在朝雷大喊。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"She is excited.","meaning":"她很兴奋。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"You should say sorry to each other.","meaning":"你们应该互相道歉。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"It's time for bed.","meaning":"该睡觉了。","ipa":"","type":"sentence","example":"","exampleMeaning":""}]},{"meta":{"child":"哥哥","title":"四下 Unit 3-4 Everyone's got talent / Plant life","grade":4},"items":[{"word":"talent","meaning":"天赋;才能","ipa":"/ˈtælənt/","type":"word","example":"I've got no talent.","exampleMeaning":"我没有天赋。"},{"word":"magic","meaning":"魔术","ipa":"/ˈmædʒɪk/","type":"word","example":"He can do magic with a hat.","exampleMeaning":"他能用帽子变魔术。"},{"word":"puzzle","meaning":"拼图游戏","ipa":"/ˈpʌzl/","type":"word","example":"She can do puzzles with one look.","exampleMeaning":"她看一眼就能拼好拼图。"},{"word":"dancer","meaning":"舞蹈演员","ipa":"/ˈdænsər/","type":"word","example":"She is dancing.","exampleMeaning":"她在跳舞。"},{"word":"boy","meaning":"男孩;儿子","ipa":"/bɔɪ/","type":"word","example":"Why are you crying, my boy?","exampleMeaning":"你为什么哭,孩子?"},{"word":"duck","meaning":"鸭子","ipa":"/dʌk/","type":"word","example":"A duck can swim.","exampleMeaning":"鸭子会游泳。"},{"word":"story","meaning":"故事","ipa":"/ˈstɔːri/","type":"word","example":"I write a story.","exampleMeaning":"我写故事。"},{"word":"act","meaning":"演出;扮演","ipa":"/ækt/","type":"word","example":"She can act in the show.","exampleMeaning":"她能在演出里表演。"},{"word":"shine","meaning":"出众","ipa":"/ʃaɪn/","type":"word","example":"Hard work makes me shine.","exampleMeaning":"努力让我出彩。"},{"word":"win","meaning":"获胜;赢","ipa":"/wɪn/","type":"word","example":"I can win the game.","exampleMeaning":"我能赢得比赛。"},{"word":"teach","meaning":"教","ipa":"/tiːtʃ/","type":"word","example":"Please teach me to run.","exampleMeaning":"请教我跑步。"},{"word":"worry","meaning":"担心","ipa":"/ˈwɜːri/","type":"word","example":"Don't worry about your clothes.","exampleMeaning":"别担心你的衣服。"},{"word":"ride","meaning":"骑","ipa":"/raɪd/","type":"word","example":"I can ride a bike.","exampleMeaning":"我会骑自行车。"},{"word":"give","meaning":"给予","ipa":"/ɡɪv/","type":"word","example":"Give me a hug.","exampleMeaning":"给我一个拥抱。"},{"word":"swim","meaning":"游泳","ipa":"/swɪm/","type":"word","example":"I'm good at swimming.","exampleMeaning":"我擅长游泳。"},{"word":"just","meaning":"就;只是","ipa":"/dʒʌst/","type":"word","example":"It's just a game.","exampleMeaning":"这只是个游戏。"},{"word":"slowly","meaning":"慢慢地","ipa":"/ˈsloʊli/","type":"word","example":"She walks slowly.","exampleMeaning":"她慢慢地走。"},{"word":"look at","meaning":"看","ipa":"/lʊk æt/","type":"phrase","example":"Look at their clothes.","exampleMeaning":"看他们的衣服。"},{"word":"play the piano","meaning":"弹钢琴","ipa":"/pleɪ ðə piˈænoʊ/","type":"phrase","example":"I can play the piano.","exampleMeaning":"我会弹钢琴。"},{"word":"worry about","meaning":"担心","ipa":"/ˈwɜːri əˈbaʊt/","type":"phrase","example":"Don't worry about your clothes.","exampleMeaning":"别担心你的衣服。"},{"word":"do puzzles","meaning":"拼拼图","ipa":"/duː ˈpʌzlz/","type":"phrase","example":"She can do puzzles with one look.","exampleMeaning":"她看一眼就能拼好拼图。"},{"word":"do magic","meaning":"变魔术","ipa":"/duː ˈmædʒɪk/","type":"phrase","example":"He can do magic with a hat.","exampleMeaning":"他能用帽子变魔术。"},{"word":"day and night","meaning":"日日夜夜","ipa":"/deɪ ænd naɪt/","type":"phrase","example":"I write day and night.","exampleMeaning":"我日夜写作。"},{"word":"take photos","meaning":"拍照","ipa":"/teɪk ˈfoʊtoʊz/","type":"phrase","example":"You can take photos.","exampleMeaning":"你可以拍照。"},{"word":"good at","meaning":"擅长","ipa":"/ɡʊd æt/","type":"phrase","example":"I'm good at swimming.","exampleMeaning":"我擅长游泳。"},{"word":"What are you looking at?","meaning":"你在看什么?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Why are you crying?","meaning":"你为什么哭?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"What is she doing?","meaning":"她在做什么?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"She is dancing.","meaning":"她在跳舞。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"seed","meaning":"种子","ipa":"/siːd/","type":"word","example":"The little seed grows up.","exampleMeaning":"小种子长大了。"},{"word":"root","meaning":"根","ipa":"/ruːt/","type":"word","example":"Roots hold the plant.","exampleMeaning":"根固定住植物。"},{"word":"stem","meaning":"茎","ipa":"/stem/","type":"word","example":"The stem is tall.","exampleMeaning":"茎很高。"},{"word":"leaf","meaning":"叶子","ipa":"/liːf/","type":"word","example":"The leaves are green.","exampleMeaning":"叶子是绿色的。"},{"word":"sunflower","meaning":"向日葵","ipa":"/ˈsʌnflaʊər/","type":"word","example":"A sunflower faces the sun.","exampleMeaning":"向日葵朝向太阳。"},{"word":"wheat","meaning":"小麦","ipa":"/wiːt/","type":"word","example":"We make bread from wheat.","exampleMeaning":"我们用小麦做面包。"},{"word":"cotton","meaning":"棉花","ipa":"/ˈkɑːtn/","type":"word","example":"We use cotton to make clothes.","exampleMeaning":"我们用棉花做衣服。"},{"word":"rice","meaning":"水稻","ipa":"/raɪs/","type":"word","example":"He wants to feed the world with his rice.","exampleMeaning":"他想用他的水稻养活世界。"},{"word":"cabbage","meaning":"卷心菜","ipa":"/ˈkæbɪdʒ/","type":"word","example":"I like cabbage.","exampleMeaning":"我喜欢卷心菜。"},{"word":"dig","meaning":"挖掘","ipa":"/dɪɡ/","type":"word","example":"The dog is digging.","exampleMeaning":"狗在挖土。"},{"word":"sleep","meaning":"睡觉","ipa":"/sliːp/","type":"word","example":"I sleep at night.","exampleMeaning":"我晚上睡觉。"},{"word":"miss","meaning":"想念","ipa":"/mɪs/","type":"word","example":"I miss Grandpa.","exampleMeaning":"我想念爷爷。"},{"word":"plant","meaning":"种植","ipa":"/plænt/","type":"word","example":"I plant seeds every spring.","exampleMeaning":"我每年春天种种子。"},{"word":"life","meaning":"一生","ipa":"/laɪf/","type":"word","example":"This is the life of a seed.","exampleMeaning":"这是一颗种子的一生。"},{"word":"thin","meaning":"细的","ipa":"/θɪn/","type":"word","example":"The stem is thin.","exampleMeaning":"茎很细。"},{"word":"mouse","meaning":"老鼠","ipa":"/maʊs/","type":"word","example":"A mouse runs fast.","exampleMeaning":"老鼠跑得快。"},{"word":"paper","meaning":"纸","ipa":"/ˈpeɪpər/","type":"word","example":"I write on paper.","exampleMeaning":"我在纸上写字。"},{"word":"earth","meaning":"泥土","ipa":"/ɜːrθ/","type":"word","example":"Put seeds in the earth.","exampleMeaning":"把种子放进泥土里。"},{"word":"will","meaning":"将要","ipa":"/wɪl/","type":"word","example":"His dreams will come true.","exampleMeaning":"他的梦想将会实现。"},{"word":"dream","meaning":"梦想","ipa":"/driːm/","type":"word","example":"His dreams will come true.","exampleMeaning":"他的梦想将会实现。"},{"word":"true","meaning":"真实的","ipa":"/truː/","type":"word","example":"His dreams will come true.","exampleMeaning":"他的梦想将会实现。"},{"word":"everything","meaning":"万物","ipa":"/ˈevriθɪŋ/","type":"word","example":"Everything grows.","exampleMeaning":"万物生长。"},{"word":"grow up","meaning":"生长","ipa":"/ɡroʊ ʌp/","type":"phrase","example":"The little seed grows up day by day.","exampleMeaning":"小种子一天天长大。"},{"word":"water the plants","meaning":"给植物浇水","ipa":"/ˈwɔːtər ðə plænts/","type":"phrase","example":"I water the plants every morning.","exampleMeaning":"我每天早上给植物浇水。"},{"word":"come true","meaning":"实现","ipa":"/kʌm truː/","type":"phrase","example":"His dreams will come true.","exampleMeaning":"他的梦想将会实现。"},{"word":"stand for","meaning":"代表","ipa":"/stænd fɔːr/","type":"phrase","example":"Red roses stand for love.","exampleMeaning":"红玫瑰代表爱情。"},{"word":"Are your seeds growing?","meaning":"你的种子在生长吗?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"We use plants to make clothes.","meaning":"我们用植物做衣服。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Put seeds in the earth.","meaning":"把种子放进泥土里。","ipa":"","type":"sentence","example":"","exampleMeaning":""}]},{"meta":{"child":"哥哥","title":"四下 Unit 5-6 School activities / Cool clothes","grade":4},"items":[{"word":"festival","meaning":"节;汇演","ipa":"/ˈfestɪvl/","type":"word","example":"It's for the Art Festival.","exampleMeaning":"这是为艺术节准备的。"},{"word":"drama","meaning":"戏剧","ipa":"/ˈdrɑːmə/","type":"word","example":"We have Drama Night.","exampleMeaning":"我们有戏剧之夜。"},{"word":"trip","meaning":"旅游;出行","ipa":"/trɪp/","type":"word","example":"We have a field trip.","exampleMeaning":"我们有实地考察。"},{"word":"fair","meaning":"集市;义卖会","ipa":"/fer/","type":"word","example":"We have a school fair.","exampleMeaning":"我们有学校集市。"},{"word":"design","meaning":"设计","ipa":"/dɪˈzaɪn/","type":"word","example":"I design a poster.","exampleMeaning":"我设计海报。"},{"word":"vote","meaning":"投票","ipa":"/voʊt/","type":"word","example":"We vote for the best.","exampleMeaning":"我们投票选最佳。"},{"word":"horn","meaning":"角","ipa":"/hɔːrn/","type":"word","example":"There are horns.","exampleMeaning":"这里有角。"},{"word":"dot","meaning":"小圆点","ipa":"/dɑːt/","type":"word","example":"It has a black dot.","exampleMeaning":"它有个黑点。"},{"word":"raindrop","meaning":"雨点","ipa":"/ˈreɪndrɑːp/","type":"word","example":"A raindrop falls.","exampleMeaning":"雨点落下。"},{"word":"note","meaning":"笔记","ipa":"/noʊt/","type":"word","example":"Please take notes.","exampleMeaning":"请记笔记。"},{"word":"hour","meaning":"小时","ipa":"/ˈaʊər/","type":"word","example":"You can go back in two hours.","exampleMeaning":"你两小时后就能回去。"},{"word":"forest","meaning":"森林","ipa":"/ˈfɔːrɪst/","type":"word","example":"He is a forest keeper.","exampleMeaning":"他是护林员。"},{"word":"keeper","meaning":"看护人","ipa":"/ˈkiːpər/","type":"word","example":"He is a forest keeper.","exampleMeaning":"他是护林员。"},{"word":"hometown","meaning":"家乡","ipa":"/ˈhoʊmtaʊn/","type":"word","example":"I love my hometown.","exampleMeaning":"我爱我的家乡。"},{"word":"stand","meaning":"展台","ipa":"/stænd/","type":"word","example":"We have a stand at the fair.","exampleMeaning":"我们在集市上有个展台。"},{"word":"culture","meaning":"文化","ipa":"/ˈkʌltʃər/","type":"word","example":"We learn about the culture.","exampleMeaning":"我们了解文化。"},{"word":"student","meaning":"学生","ipa":"/ˈstuːdnt/","type":"word","example":"There are some students in the park.","exampleMeaning":"公园里有些学生。"},{"word":"more","meaning":"更多的","ipa":"/mɔːr/","type":"word","example":"Are there more?","exampleMeaning":"还有更多吗?"},{"word":"special","meaning":"特殊的","ipa":"/ˈspeʃl/","type":"word","example":"There is a special activity.","exampleMeaning":"有个特殊活动。"},{"word":"lovely","meaning":"可爱的;美好的","ipa":"/ˈlʌvli/","type":"word","example":"What a lovely day!","exampleMeaning":"多美好的一天!"},{"word":"Science Day","meaning":"科学日","ipa":"","type":"phrase","example":"We have Science Day.","exampleMeaning":"我们有科学日。"},{"word":"Drama Night","meaning":"戏剧之夜","ipa":"","type":"phrase","example":"We have Drama Night.","exampleMeaning":"我们有戏剧之夜。"},{"word":"Picnic Day","meaning":"野餐日","ipa":"","type":"phrase","example":"We have Picnic Day.","exampleMeaning":"我们有野餐日。"},{"word":"Sports Day","meaning":"运动会","ipa":"","type":"phrase","example":"We have Sports Day.","exampleMeaning":"我们有运动会。"},{"word":"the Art Festival","meaning":"艺术节","ipa":"","type":"phrase","example":"It's for the Art Festival.","exampleMeaning":"这是为艺术节准备的。"},{"word":"field trip","meaning":"实地考察","ipa":"/fiːld trɪp/","type":"phrase","example":"We have a field trip.","exampleMeaning":"我们有实地考察。"},{"word":"culture fair","meaning":"文化集市","ipa":"","type":"phrase","example":"We have a culture fair.","exampleMeaning":"我们有文化集市。"},{"word":"have fun","meaning":"玩得开心","ipa":"/hæv fʌn/","type":"phrase","example":"Let's have fun with our friends.","exampleMeaning":"让我们和朋友玩得开心。"},{"word":"look like","meaning":"看起来像","ipa":"/lʊk laɪk/","type":"phrase","example":"The clouds look like little rabbits.","exampleMeaning":"云看起来像小兔子。"},{"word":"take notes","meaning":"记笔记","ipa":"/teɪk noʊts/","type":"phrase","example":"Please take notes at the culture fair.","exampleMeaning":"请在文化集市上记笔记。"},{"word":"fall off","meaning":"掉下","ipa":"/fɔːl ɔːf/","type":"phrase","example":"The little bird doesn't fall off the tree.","exampleMeaning":"小鸟没从树上掉下来。"},{"word":"There are horns.","meaning":"这里有角。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Are there more?","meaning":"还有更多吗?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"Is there a book on the desk?","meaning":"桌上有书吗?","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"There are two birds in the tree.","meaning":"树上有两只鸟。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"T-shirt","meaning":"T 恤","ipa":"/ˈtiːʃɜːrt/","type":"word","example":"We're wearing T-shirts with our names.","exampleMeaning":"我们穿着印有名字的 T 恤。"},{"word":"skirt","meaning":"半裙","ipa":"/skɜːrt/","type":"word","example":"I'm looking for my blue skirt.","exampleMeaning":"我在找我的蓝裙子。"},{"word":"shorts","meaning":"短裤","ipa":"/ʃɔːrts/","type":"word","example":"He wears shorts in summer.","exampleMeaning":"他夏天穿短裤。"},{"word":"shirt","meaning":"衬衫","ipa":"/ʃɜːrt/","type":"word","example":"This is my new shirt.","exampleMeaning":"这是我的新衬衫。"},{"word":"trousers","meaning":"裤子","ipa":"/ˈtraʊzərz/","type":"word","example":"I need new trousers.","exampleMeaning":"我需要新裤子。"},{"word":"scarf","meaning":"围巾","ipa":"/skɑːrf/","type":"word","example":"She wears a red scarf.","exampleMeaning":"她戴着红围巾。"},{"word":"dress","meaning":"连衣裙","ipa":"/dres/","type":"word","example":"Mum is cutting up my old dress.","exampleMeaning":"妈妈在裁剪我的旧裙子。"},{"word":"uniform","meaning":"制服","ipa":"/ˈjuːnɪfɔːrm/","type":"word","example":"We wear school uniforms.","exampleMeaning":"我们穿校服。"},{"word":"robe","meaning":"长袍","ipa":"/roʊb/","type":"word","example":"He wears a long robe.","exampleMeaning":"他穿长袍。"},{"word":"sweater","meaning":"毛衣","ipa":"/ˈswetər/","type":"word","example":"I wear a sweater in winter.","exampleMeaning":"我冬天穿毛衣。"},{"word":"clever","meaning":"聪明的","ipa":"/ˈklevər/","type":"word","example":"The boy is clever.","exampleMeaning":"这个男孩很聪明。"},{"word":"same","meaning":"相同的","ipa":"/seɪm/","type":"word","example":"We are in the same school.","exampleMeaning":"我们在同一所学校。"},{"word":"wrong","meaning":"错误的","ipa":"/rɔːŋ/","type":"word","example":"That is wrong.","exampleMeaning":"那是错的。"},{"word":"party","meaning":"聚会","ipa":"/ˈpɑːrti/","type":"word","example":"We need clothes for a party.","exampleMeaning":"我们需要聚会穿的衣服。"},{"word":"whale","meaning":"鲸","ipa":"/weɪl/","type":"word","example":"A whale is huge.","exampleMeaning":"鲸很大。"},{"word":"Mr","meaning":"先生","ipa":"/ˈmɪstər/","type":"word","example":"Mr Lee is our teacher.","exampleMeaning":"李先生是我们的老师。"},{"word":"dressmaker","meaning":"裁缝","ipa":"/ˈdresmeɪkər/","type":"word","example":"The dressmaker can make clothes for us.","exampleMeaning":"裁缝能为我们做衣服。"},{"word":"look for","meaning":"寻找","ipa":"/lʊk fɔːr/","type":"phrase","example":"I'm looking for my blue skirt everywhere.","exampleMeaning":"我到处找我的蓝裙子。"},{"word":"cut up","meaning":"裁剪","ipa":"/kʌt ʌp/","type":"phrase","example":"Mum is cutting up my old dress.","exampleMeaning":"妈妈在裁剪我的旧裙子。"},{"word":"come from","meaning":"来自","ipa":"/kʌm frʌm/","type":"phrase","example":"Silk comes from silkworms.","exampleMeaning":"丝绸来自蚕。"},{"word":"make clothes","meaning":"做衣服","ipa":"/meɪk kloʊðz/","type":"phrase","example":"The dressmaker can make clothes for us.","exampleMeaning":"裁缝能为我们做衣服。"},{"word":"We're wearing T-shirts with our names.","meaning":"我们穿着印有名字的 T 恤。","ipa":"","type":"sentence","example":"","exampleMeaning":""},{"word":"We need clothes for a party.","meaning":"我们需要聚会穿的衣服。","ipa":"","type":"sentence","example":"","exampleMeaning":""}]},{"meta":{"child":"哥哥","title":"四下 四会词汇默写专项","grade":4},"items":[{"word":"doctor","meaning":"医生","ipa":"/ˈdɑːktər/","type":"word","example":"","exampleMeaning":""},{"word":"farmer","meaning":"农民","ipa":"/ˈfɑːrmər/","type":"word","example":"","exampleMeaning":""},{"word":"cook","meaning":"厨师","ipa":"/kʊk/","type":"word","example":"","exampleMeaning":""},{"word":"police","meaning":"警察","ipa":"/pəˈliːs/","type":"word","example":"","exampleMeaning":""},{"word":"worker","meaning":"工人","ipa":"/ˈwɜːrkər/","type":"word","example":"","exampleMeaning":""},{"word":"driver","meaning":"司机","ipa":"/ˈdraɪvər/","type":"word","example":"","exampleMeaning":""},{"word":"nurse","meaning":"护士","ipa":"/nɜːrs/","type":"word","example":"","exampleMeaning":""},{"word":"student","meaning":"学生","ipa":"/ˈstuːdnt/","type":"word","example":"","exampleMeaning":""},{"word":"Mr","meaning":"先生","ipa":"/ˈmɪstər/","type":"word","example":"","exampleMeaning":""},{"word":"aunt","meaning":"姑姑;阿姨","ipa":"/ænt/","type":"word","example":"","exampleMeaning":""},{"word":"uncle","meaning":"叔叔;伯伯","ipa":"/ˈʌŋkl/","type":"word","example":"","exampleMeaning":""},{"word":"bee","meaning":"蜜蜂","ipa":"/biː/","type":"word","example":"","exampleMeaning":""},{"word":"street","meaning":"街道","ipa":"/striːt/","type":"word","example":"","exampleMeaning":""},{"word":"hometown","meaning":"家乡","ipa":"/ˈhoʊmtaʊn/","type":"word","example":"","exampleMeaning":""},{"word":"taxi","meaning":"出租车","ipa":"/ˈtæksi/","type":"word","example":"","exampleMeaning":""},{"word":"sad","meaning":"伤心的","ipa":"/sæd/","type":"word","example":"","exampleMeaning":""},{"word":"angry","meaning":"生气的","ipa":"/ˈæŋɡri/","type":"word","example":"","exampleMeaning":""},{"word":"excited","meaning":"兴奋的","ipa":"/ɪkˈsaɪtɪd/","type":"word","example":"","exampleMeaning":""},{"word":"thin","meaning":"瘦的;细的","ipa":"/θɪn/","type":"word","example":"","exampleMeaning":""},{"word":"lovely","meaning":"可爱的","ipa":"/ˈlʌvli/","type":"word","example":"","exampleMeaning":""},{"word":"wrong","meaning":"错误的","ipa":"/rɔːŋ/","type":"word","example":"","exampleMeaning":""},{"word":"clever","meaning":"聪明的","ipa":"/ˈklevər/","type":"word","example":"","exampleMeaning":""},{"word":"next","meaning":"下次的;紧接着的","ipa":"/nekst/","type":"word","example":"","exampleMeaning":""},{"word":"safe","meaning":"安全的","ipa":"/seɪf/","type":"word","example":"","exampleMeaning":""},{"word":"gift","meaning":"礼物","ipa":"/ɡɪft/","type":"word","example":"","exampleMeaning":""},{"word":"boy","meaning":"男孩","ipa":"/bɔɪ/","type":"word","example":"","exampleMeaning":""},{"word":"paper","meaning":"纸","ipa":"/ˈpeɪpər/","type":"word","example":"","exampleMeaning":""},{"word":"hour","meaning":"小时","ipa":"/ˈaʊər/","type":"word","example":"","exampleMeaning":""},{"word":"party","meaning":"聚会","ipa":"/ˈpɑːrti/","type":"word","example":"","exampleMeaning":""},{"word":"night","meaning":"夜晚","ipa":"/naɪt/","type":"word","example":"","exampleMeaning":""},{"word":"light","meaning":"光亮;照亮","ipa":"/laɪt/","type":"word","example":"","exampleMeaning":""},{"word":"earth","meaning":"泥土","ipa":"/ɜːrθ/","type":"word","example":"","exampleMeaning":""},{"word":"should","meaning":"应该","ipa":"/ʃʊd/","type":"word","example":"","exampleMeaning":""},{"word":"use","meaning":"使用","ipa":"/juːz/","type":"word","example":"","exampleMeaning":""},{"word":"often","meaning":"经常;时常","ipa":"/ˈɔːfn/","type":"word","example":"","exampleMeaning":""},{"word":"plant","meaning":"种植","ipa":"/plænt/","type":"word","example":"","exampleMeaning":""},{"word":"sleep","meaning":"睡觉","ipa":"/sliːp/","type":"word","example":"","exampleMeaning":""},{"word":"will","meaning":"将要","ipa":"/wɪl/","type":"word","example":"","exampleMeaning":""},{"word":"win","meaning":"赢","ipa":"/wɪn/","type":"word","example":"","exampleMeaning":""},{"word":"skirt","meaning":"短裙","ipa":"/skɜːrt/","type":"word","example":"","exampleMeaning":""},{"word":"shorts","meaning":"短裤","ipa":"/ʃɔːrts/","type":"word","example":"","exampleMeaning":""},{"word":"shirt","meaning":"衬衫","ipa":"/ʃɜːrt/","type":"word","example":"","exampleMeaning":""},{"word":"trousers","meaning":"裤子","ipa":"/ˈtraʊzərz/","type":"word","example":"","exampleMeaning":""},{"word":"sweater","meaning":"毛衣","ipa":"/ˈswetər/","type":"word","example":"","exampleMeaning":""},{"word":"dress","meaning":"连衣裙","ipa":"/dres/","type":"word","example":"","exampleMeaning":""}]},{"meta":{"child":"弟弟","title":"一下·人物方位与数字","grade":1},"items":[{"word":"he","meaning":"他","ipa":"/hiː/","type":"word","example":"He is my friend.","exampleMeaning":"他是我的朋友。"},{"word":"she","meaning":"她","ipa":"/ʃiː/","type":"word","example":"She is a girl.","exampleMeaning":"她是一个女孩。"},{"word":"doctor","meaning":"医生","ipa":"/ˈdɒktə(r)/","type":"word","example":"The doctor is nice.","exampleMeaning":"这位医生很和蔼。"},{"word":"nurse","meaning":"护士","ipa":"/nɜːs/","type":"word","example":"The nurse helps me.","exampleMeaning":"护士帮助我。"},{"word":"driver","meaning":"司机","ipa":"/ˈdraɪvə(r)/","type":"word","example":"My dad is a driver.","exampleMeaning":"我爸爸是司机。"},{"word":"policeman","meaning":"警察","ipa":"/pəˈliːsmən/","type":"word","example":"The policeman helps us.","exampleMeaning":"警察帮助我们。"},{"word":"pupil","meaning":"学生","ipa":"/ˈpjuːpl/","type":"word","example":"I am a pupil.","exampleMeaning":"我是一名学生。"},{"word":"me","meaning":"我（宾格）","ipa":"/miː/","type":"word","example":"Look at me!","exampleMeaning":"看着我！"},{"word":"he's","meaning":"他是","ipa":"/hiːz/","type":"word","example":"He's a doctor.","exampleMeaning":"他是一名医生。"},{"word":"she's","meaning":"她是","ipa":"/ʃiːz/","type":"word","example":"She's a nurse.","exampleMeaning":"她是一名护士。"},{"word":"where","meaning":"哪里","ipa":"/weə(r)/","type":"word","example":"Where is my hat?","exampleMeaning":"我的帽子在哪里？"},{"word":"where's","meaning":"在哪里","ipa":"/weəz/","type":"word","example":"Where's the cat?","exampleMeaning":"猫在哪里？"},{"word":"in","meaning":"在……里面","ipa":"/ɪn/","type":"word","example":"The toy is in the box.","exampleMeaning":"玩具在盒子里。"},{"word":"on","meaning":"在……上面","ipa":"/ɒn/","type":"word","example":"The hat is on the bed.","exampleMeaning":"帽子在床上。"},{"word":"under","meaning":"在……下面","ipa":"/ˈʌndə(r)/","type":"word","example":"The cat is under the bed.","exampleMeaning":"猫在床下面。"},{"word":"hat","meaning":"帽子","ipa":"/hæt/","type":"word","example":"I have a red hat.","exampleMeaning":"我有一顶红帽子。"},{"word":"toy","meaning":"玩具","ipa":"/tɔɪ/","type":"word","example":"This is my toy.","exampleMeaning":"这是我的玩具。"},{"word":"bed","meaning":"床","ipa":"/bed/","type":"word","example":"I go to bed.","exampleMeaning":"我上床睡觉。"},{"word":"bear","meaning":"熊","ipa":"/beə(r)/","type":"word","example":"The bear is big.","exampleMeaning":"这只熊很大。"},{"word":"look at","meaning":"看","ipa":"/lʊk æt/","type":"phrase","example":"Look at the bird!","exampleMeaning":"看那只鸟！"},{"word":"eleven","meaning":"十一","ipa":"/ɪˈlevn/","type":"word","example":"I am eleven.","exampleMeaning":"我十一岁。"},{"word":"twelve","meaning":"十二","ipa":"/twelv/","type":"word","example":"She is twelve.","exampleMeaning":"她十二岁。"},{"word":"fish","meaning":"鱼","ipa":"/fɪʃ/","type":"word","example":"The fish can swim.","exampleMeaning":"鱼会游泳。"},{"word":"tree","meaning":"树","ipa":"/triː/","type":"word","example":"The tree is tall.","exampleMeaning":"这棵树很高。"},{"word":"other","meaning":"其他的","ipa":"/ˈʌðə(r)/","type":"word","example":"I like the other one.","exampleMeaning":"我喜欢另一个。"},{"word":"know","meaning":"知道","ipa":"/nəʊ/","type":"word","example":"I know this word.","exampleMeaning":"我认识这个单词。"},{"word":"don't","meaning":"不","ipa":"/dəʊnt/","type":"word","example":"Don't run!","exampleMeaning":"别跑！"},{"word":"let's","meaning":"让我们","ipa":"/lets/","type":"word","example":"Let's go to school.","exampleMeaning":"我们去上学吧。"}]},{"meta":{"child":"弟弟","title":"一下·身体与动物","grade":1},"items":[{"word":"head","meaning":"头","ipa":"/hed/","type":"word","example":"I have a big head.","exampleMeaning":"我有一个大脑袋。"},{"word":"face","meaning":"脸","ipa":"/feɪs/","type":"word","example":"Wash your face.","exampleMeaning":"洗洗脸。"},{"word":"nose","meaning":"鼻子","ipa":"/nəʊz/","type":"word","example":"My nose is small.","exampleMeaning":"我的鼻子很小。"},{"word":"eye","meaning":"眼睛","ipa":"/aɪ/","type":"word","example":"I have two eyes.","exampleMeaning":"我有两只眼睛。"},{"word":"ear","meaning":"耳朵","ipa":"/ɪə(r)/","type":"word","example":"The rabbit has long ears.","exampleMeaning":"兔子有长耳朵。"},{"word":"mouth","meaning":"嘴","ipa":"/maʊθ/","type":"word","example":"Open your mouth.","exampleMeaning":"张开嘴。"},{"word":"hand","meaning":"手","ipa":"/hænd/","type":"word","example":"I have two hands.","exampleMeaning":"我有两只手。"},{"word":"arm","meaning":"胳膊","ipa":"/ɑːm/","type":"word","example":"My arm is strong.","exampleMeaning":"我的胳膊很强壮。"},{"word":"leg","meaning":"腿","ipa":"/leɡ/","type":"word","example":"I have two legs.","exampleMeaning":"我有两条腿。"},{"word":"foot","meaning":"脚","ipa":"/fʊt/","type":"word","example":"My foot is big.","exampleMeaning":"我的脚很大。"},{"word":"feet","meaning":"脚（复数）","ipa":"/fiːt/","type":"word","example":"I have two feet.","exampleMeaning":"我有两只脚。"},{"word":"body","meaning":"身体","ipa":"/ˈbɒdi/","type":"word","example":"My body is strong.","exampleMeaning":"我的身体很强壮。"},{"word":"touch","meaning":"触摸","ipa":"/tʌtʃ/","type":"word","example":"Touch your nose.","exampleMeaning":"摸摸你的鼻子。"},{"word":"baby","meaning":"婴儿","ipa":"/ˈbeɪbi/","type":"word","example":"The baby is cute.","exampleMeaning":"这个婴儿很可爱。"},{"word":"these","meaning":"这些","ipa":"/ðiːz/","type":"word","example":"These are my toys.","exampleMeaning":"这些是我的玩具。"},{"word":"they","meaning":"它们/他们/她们","ipa":"/ðeɪ/","type":"word","example":"They are on the farm.","exampleMeaning":"它们在农场上。"},{"word":"they're","meaning":"它们是","ipa":"/ðeə(r)/","type":"word","example":"They're cows.","exampleMeaning":"它们是奶牛。"},{"word":"cow","meaning":"奶牛","ipa":"/kaʊ/","type":"word","example":"The cow is big.","exampleMeaning":"这头奶牛很大。"},{"word":"pig","meaning":"猪","ipa":"/pɪɡ/","type":"word","example":"The pig is fat.","exampleMeaning":"这头猪很胖。"},{"word":"duck","meaning":"鸭子","ipa":"/dʌk/","type":"word","example":"The duck can swim.","exampleMeaning":"鸭子会游泳。"},{"word":"chicken","meaning":"鸡","ipa":"/ˈtʃɪkɪn/","type":"word","example":"The chicken is small.","exampleMeaning":"这只鸡很小。"},{"word":"farm","meaning":"农场","ipa":"/fɑːm/","type":"word","example":"I live on a farm.","exampleMeaning":"我住在农场。"},{"word":"fat","meaning":"胖的","ipa":"/fæt/","type":"word","example":"The pig is fat.","exampleMeaning":"这头猪很胖。"},{"word":"big","meaning":"大的","ipa":"/bɪɡ/","type":"word","example":"The cow is big.","exampleMeaning":"这头奶牛很大。"},{"word":"little","meaning":"小的","ipa":"/ˈlɪtl/","type":"word","example":"The duck is little.","exampleMeaning":"这只鸭子很小。"},{"word":"thin","meaning":"瘦的","ipa":"/θɪn/","type":"word","example":"The cat is thin.","exampleMeaning":"这只猫很瘦。"},{"word":"egg","meaning":"鸡蛋","ipa":"/eɡ/","type":"word","example":"I like eggs.","exampleMeaning":"我喜欢鸡蛋。"},{"word":"very","meaning":"非常","ipa":"/ˈveri/","type":"word","example":"It is very big.","exampleMeaning":"它非常大。"},{"word":"snake","meaning":"蛇","ipa":"/sneɪk/","type":"word","example":"The snake is long.","exampleMeaning":"这条蛇很长。"},{"word":"giraffe","meaning":"长颈鹿","ipa":"/dʒəˈrɑːf/","type":"word","example":"The giraffe is tall.","exampleMeaning":"长颈鹿很高。"},{"word":"elephant","meaning":"大象","ipa":"/ˈelɪfənt/","type":"word","example":"The elephant is big.","exampleMeaning":"大象很大。"},{"word":"tiger","meaning":"老虎","ipa":"/ˈtaɪɡə(r)/","type":"word","example":"The tiger is strong.","exampleMeaning":"老虎很强壮。"},{"word":"horse","meaning":"马","ipa":"/hɔːs/","type":"word","example":"The horse can run.","exampleMeaning":"马会跑。"},{"word":"zoo","meaning":"动物园","ipa":"/zuː/","type":"word","example":"Let's go to the zoo.","exampleMeaning":"我们去动物园吧。"},{"word":"tall","meaning":"高的","ipa":"/tɔːl/","type":"word","example":"The tree is tall.","exampleMeaning":"这棵树很高。"},{"word":"short","meaning":"矮的；短的","ipa":"/ʃɔːt/","type":"word","example":"The dog is short.","exampleMeaning":"这只狗很矮。"},{"word":"long","meaning":"长的","ipa":"/lɒŋ/","type":"word","example":"The snake is long.","exampleMeaning":"这条蛇很长。"},{"word":"small","meaning":"小的","ipa":"/smɔːl/","type":"word","example":"The egg is small.","exampleMeaning":"这个鸡蛋很小。"},{"word":"strong","meaning":"强壮的","ipa":"/strɒŋ/","type":"word","example":"The tiger is strong.","exampleMeaning":"老虎很强壮。"},{"word":"cute","meaning":"可爱的","ipa":"/kjuːt/","type":"word","example":"The baby is cute.","exampleMeaning":"这个婴儿很可爱。"},{"word":"go","meaning":"去","ipa":"/ɡəʊ/","type":"word","example":"Let's go to the zoo.","exampleMeaning":"我们去动物园吧。"},{"word":"aren't","meaning":"不是","ipa":"/ɑːnt/","type":"word","example":"They aren't big.","exampleMeaning":"它们不大。"}]},{"meta":{"child":"弟弟","title":"一下·服装运动与活动","grade":1},"items":[{"word":"animal","meaning":"动物","ipa":"/ˈænɪml/","type":"word","example":"I like animals.","exampleMeaning":"我喜欢动物。"},{"word":"can","meaning":"能；可以","ipa":"/kæn/","type":"word","example":"I can swim.","exampleMeaning":"我会游泳。"},{"word":"see","meaning":"看见","ipa":"/siː/","type":"word","example":"I can see a bird.","exampleMeaning":"我能看见一只鸟。"},{"word":"help","meaning":"帮助","ipa":"/help/","type":"word","example":"Can you help me?","exampleMeaning":"你能帮我吗？"},{"word":"some","meaning":"一些","ipa":"/sʌm/","type":"word","example":"I have some toys.","exampleMeaning":"我有一些玩具。"},{"word":"at","meaning":"在","ipa":"/æt/","type":"word","example":"Look at me.","exampleMeaning":"看着我。"},{"word":"there is","meaning":"有（单数）","ipa":"/ðeə(r) ɪz/","type":"phrase","example":"There is a cat.","exampleMeaning":"有一只猫。"},{"word":"there are","meaning":"有（复数）","ipa":"/ðeə(r) ɑː(r)/","type":"phrase","example":"There are two dogs.","exampleMeaning":"有两只狗。"},{"word":"over there","meaning":"在那边","ipa":"/ˈəʊvə(r) ðeə(r)/","type":"phrase","example":"The cat is over there.","exampleMeaning":"猫在那边。"},{"word":"clothes","meaning":"衣服","ipa":"/kləʊðz/","type":"word","example":"I like my clothes.","exampleMeaning":"我喜欢我的衣服。"},{"word":"shirt","meaning":"衬衫","ipa":"/ʃɜːt/","type":"word","example":"My shirt is white.","exampleMeaning":"我的衬衫是白色的。"},{"word":"shorts","meaning":"短裤","ipa":"/ʃɔːts/","type":"word","example":"I wear shorts in summer.","exampleMeaning":"我夏天穿短裤。"},{"word":"shoe","meaning":"鞋","ipa":"/ʃuː/","type":"word","example":"I have new shoes.","exampleMeaning":"我有新鞋。"},{"word":"sock","meaning":"袜子","ipa":"/sɒk/","type":"word","example":"My socks are blue.","exampleMeaning":"我的袜子是蓝色的。"},{"word":"a pair of","meaning":"一双；一副","ipa":"/ə peə(r) ɒv/","type":"phrase","example":"I have a pair of shoes.","exampleMeaning":"我有一双鞋。"},{"word":"put on","meaning":"穿上","ipa":"/pʊt ɒn/","type":"phrase","example":"Put on your shirt.","exampleMeaning":"穿上你的衬衫。"},{"word":"football","meaning":"足球","ipa":"/ˈfʊtbɔːl/","type":"word","example":"I like football.","exampleMeaning":"我喜欢足球。"},{"word":"basketball","meaning":"篮球","ipa":"/ˈbɑːskɪtbɔːl/","type":"word","example":"He plays basketball.","exampleMeaning":"他打篮球。"},{"word":"ping-pong","meaning":"乒乓球","ipa":"/ˈpɪŋ pɒŋ/","type":"word","example":"Let's play ping-pong.","exampleMeaning":"我们打乒乓球吧。"},{"word":"swim","meaning":"游泳","ipa":"/swɪm/","type":"word","example":"I can swim.","exampleMeaning":"我会游泳。"},{"word":"here","meaning":"这里","ipa":"/hɪə(r)/","type":"word","example":"Come here, please.","exampleMeaning":"请过来这里。"},{"word":"OK","meaning":"好的","ipa":"/əʊˈkeɪ/","type":"word","example":"OK, let's go.","exampleMeaning":"好的，我们走吧。"},{"word":"like","meaning":"喜欢","ipa":"/laɪk/","type":"word","example":"I like to play.","exampleMeaning":"我喜欢玩。"},{"word":"favourite","meaning":"最喜欢的","ipa":"/ˈfeɪvərɪt/","type":"word","example":"Red is my favourite.","exampleMeaning":"红色是我最喜欢的。"},{"word":"sport","meaning":"运动","ipa":"/spɔːt/","type":"word","example":"I love sport.","exampleMeaning":"我热爱运动。"},{"word":"guess","meaning":"猜","ipa":"/ɡes/","type":"word","example":"Guess what it is.","exampleMeaning":"猜猜它是什么。"},{"word":"lion","meaning":"狮子","ipa":"/ˈlaɪən/","type":"word","example":"The lion is strong.","exampleMeaning":"狮子很强壮。"},{"word":"them","meaning":"他们/她们/它们（宾格）","ipa":"/ðem/","type":"word","example":"I like them.","exampleMeaning":"我喜欢他们。"},{"word":"all","meaning":"全部","ipa":"/ɔːl/","type":"word","example":"We all like to play.","exampleMeaning":"我们都喜欢玩。"},{"word":"play","meaning":"玩；打（球）","ipa":"/pleɪ/","type":"word","example":"Let's play football.","exampleMeaning":"我们踢足球吧。"},{"word":"with","meaning":"和……一起","ipa":"/wɪð/","type":"word","example":"Play with me.","exampleMeaning":"和我一起玩。"},{"word":"together","meaning":"一起","ipa":"/təˈɡeðə(r)/","type":"word","example":"Let's play together.","exampleMeaning":"我们一起玩吧。"},{"word":"swimming","meaning":"游泳","ipa":"/ˈswɪmɪŋ/","type":"word","example":"I like swimming.","exampleMeaning":"我喜欢游泳。"},{"word":"what about","meaning":"……怎么样","ipa":"/wɒt əˈbaʊt/","type":"phrase","example":"What about you?","exampleMeaning":"你呢？"},{"word":"idea","meaning":"主意","ipa":"/aɪˈdɪə/","type":"word","example":"That is a good idea.","exampleMeaning":"那是个好主意。"},{"word":"hot","meaning":"热的","ipa":"/hɒt/","type":"word","example":"It is hot today.","exampleMeaning":"今天很热。"},{"word":"tired","meaning":"累的","ipa":"/ˈtaɪəd/","type":"word","example":"I am tired.","exampleMeaning":"我累了。"},{"word":"sing","meaning":"唱歌","ipa":"/sɪŋ/","type":"word","example":"I can sing.","exampleMeaning":"我会唱歌。"},{"word":"dance","meaning":"跳舞","ipa":"/dɑːns/","type":"word","example":"Let's dance together.","exampleMeaning":"我们一起跳舞吧。"},{"word":"go swimming","meaning":"去游泳","ipa":"/ɡəʊ ˈswɪmɪŋ/","type":"phrase","example":"Let's go swimming.","exampleMeaning":"我们去游泳吧。"}]}];
+
+/* ---------- 持久化数据 ---------- */
+// store = { banks:{id:{meta,items}}, progress:{bankId:{stars}}, wrong:{bankId:[{key,streak}]},
+//           timing:{mode:{n,mean,m2}}, identity:"哥哥"|"弟弟"|null }
+let store = loadStore();
+
+function loadStore(){
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw) return JSON.parse(raw);
+  } catch(e){}
+  return { banks:{}, progress:{}, wrong:{}, timing:{}, hintOn:false };
+}
+function saveStore(){ localStorage.setItem(LS_KEY, JSON.stringify(store)); }
+
+/* ---------- 工具函数 ---------- */
+function $(id){ return document.getElementById(id); }
+function show(screen){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $("screen-"+screen).classList.add("active");
+  window.scrollTo(0,0);
+}
+function toast(msg){
+  const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1800);
+}
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function itemKey(bankId,it){ return bankId+"::"+it.word; }
+
+/* ---------- 发音(Web Speech API) ---------- */
+function speak(text){
+  if(!text || !window.speechSynthesis) return;
+  try {
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang="en-US"; u.rate=0.85;
+    speechSynthesis.speak(u);
+  } catch(e){}
+}
+
+/* =========================================================
+   词库加载与首页
+   ========================================================= */
+function bankId(meta){ return (meta.child||"?")+"｜"+(meta.title||"未命名"); }
+
+function addBank(data){
+  if(!data || !data.meta || !Array.isArray(data.items)){ toast("文件格式不对 😕"); return; }
+  const id=bankId(data.meta);
+  store.banks[id]={ meta:data.meta, items:data.items };
+  if(!store.progress[id]) store.progress[id]={stars:0};
+  if(!store.wrong[id]) store.wrong[id]=[];
+  saveStore();
+  renderBanks();
+  toast("已加载:"+data.meta.title);
+}
+
+function renderBanks(){
+  const identity=store.identity;
+  // 未选身份 → 去欢迎页
+  if(!identity){ show("welcome"); return; }
+  // 更新首页"切换"按钮
+  const sb=$("switchIdentityBtn"); if(sb) sb.onclick=switchIdentity;
+
+  const list=$("bankList"); list.innerHTML="";
+  const ids=Object.keys(store.banks).filter(id=>(store.banks[id].meta.child||"未分组")===identity);
+  if(ids.length===0){
+    list.innerHTML='<p class="empty">还没有词库,点右上角"＋ 加载词库"添加吧!</p>';
+    show("home");
+    return;
+  }
+  ids.forEach(id=>{
+    const b=store.banks[id]; const stars=(store.progress[id]||{}).stars||0;
+    const wrong=(store.wrong[id]||[]).length;
+    const tile=document.createElement("div");
+    tile.className="tile";
+    tile.innerHTML=`<span class="emoji">📗</span>
+      <div class="t-title">${b.meta.title}</div>
+      <div class="t-sub">${b.items.length} 个条目 · ${b.meta.grade?('年级 '+b.meta.grade):''}</div>
+      <div class="badge">⭐ ${stars}${wrong?(' · 📒 '+wrong):''}</div>`;
+    tile.onclick=()=>enterBank(id);
+    list.appendChild(tile);
+  });
+  // 总库卡片(名下所有子库合并)。仅当有 2 个及以上子库时才显示
+  if(ids.length>=2){
+    const totItems=ids.reduce((n,id)=>n+store.banks[id].items.length,0);
+    const totWrong=ids.reduce((n,id)=>n+(store.wrong[id]||[]).length,0);
+    const tstars=(store.progress["__total__::"+identity]||{}).stars||0;
+    const tile=document.createElement("div");
+    tile.className="tile tile-total";
+    tile.innerHTML=`<span class="emoji">📚</span>
+      <div class="t-title">总库</div>
+      <div class="t-sub">${ids.length} 个子库 · ${totItems} 个条目</div>
+      <div class="badge">⭐ ${tstars}${totWrong?(' · 📒 '+totWrong):''}</div>`;
+    tile.onclick=()=>enterTotal(identity);
+    list.appendChild(tile);
+  }
+  show("home");
+}
+
+/* ---------- 身份选择 ---------- */
+function enterIdentity(child){
+  store.identity=child;
+  saveStore();
+  renderBanks();
+}
+function switchIdentity(){
+  store.identity=null;
+  saveStore();
+  show("welcome");
+}
+// 绑定欢迎页两张照片的点击
+function bindWelcomeCards(){
+  document.querySelectorAll(".id-card").forEach(card=>{
+    card.onclick=()=>enterIdentity(card.dataset.child);
+  });
+}
+
+/* =========================================================
+   模式选择
+   ========================================================= */
+const MODES=[
+  {id:"spell1", emoji:"✏️", title:"拼写闯关 1", sub:"补全缺字母的单词"},
+  {id:"spell2", emoji:"⌨️", title:"拼写闯关 2", sub:"看释义默写整词"},
+  {id:"mean1",  emoji:"🤔", title:"意思闯关 1", sub:"看单词选意思"},
+  {id:"mean2",  emoji:"🔤", title:"意思闯关 2", sub:"看意思选单词"},
+  {id:"cloze",  emoji:"📝", title:"完形填空",   sub:"句子里敲出单词"},
+];
+
+let scope=null; // {kind:'bank'|'total', child, title, bankIds:[...]}
+
+/* 进入一个子库 */
+function enterBank(id){
+  const b=store.banks[id];
+  enterScope({ kind:"bank", child:b.meta.child||"", title:b.meta.title, bankIds:[id] });
+}
+/* 进入某个孩子的总库(名下所有子库合并) */
+function enterTotal(child){
+  const ids=Object.keys(store.banks).filter(id=>(store.banks[id].meta.child||"未分组")===child);
+  enterScope({ kind:"total", child, title:"总库(全部子库)", bankIds:ids });
+}
+
+function enterScope(sc){
+  scope=sc;
+  $("modeCrumbs").textContent=(sc.child||"")+" · "+sc.title;
+  const grid=$("modeGrid"); grid.innerHTML="";
+  MODES.forEach(m=>{
+    const tile=document.createElement("div");
+    tile.className="tile";
+    tile.innerHTML=`<span class="emoji">${m.emoji}</span><div class="t-title">${m.title}</div><div class="t-sub">${m.sub}</div>`;
+    tile.onclick=()=>startGame(m.id,false);
+    grid.appendChild(tile);
+  });
+  $("wrongLabel").textContent = sc.kind==="total" ? "📒 总库错题本" : "📒 子库错题本";
+  $("wrongCount").textContent=scopeWrong().length+" 题";
+  updateHintToggle();
+  show("mode");
+}
+
+/* ---------- 作用域工具:跨子库取条目 / 取错题 ---------- */
+// 返回作用域内全部条目,每条带 _bid(来源子库)与 _grade
+function scopeItems(){
+  const out=[];
+  scope.bankIds.forEach(bid=>{
+    const b=store.banks[bid]; if(!b) return;
+    const g=b.meta.grade||4;
+    b.items.forEach(it=> out.push(Object.assign({}, it, {_bid:bid, _grade:g})));
+  });
+  return out;
+}
+// 返回作用域内全部错题条目(已映射回 item,带 _bid/_grade)
+function scopeWrongItems(){
+  const out=[];
+  scope.bankIds.forEach(bid=>{
+    const b=store.banks[bid]; if(!b) return;
+    const keys=(store.wrong[bid]||[]).map(w=>w.key);
+    const g=b.meta.grade||4;
+    b.items.forEach(it=>{ if(keys.includes(itemKey(bid,it))) out.push(Object.assign({}, it, {_bid:bid, _grade:g})); });
+  });
+  return out;
+}
+// 作用域内错题原始记录(扁平)
+function scopeWrong(){
+  const out=[];
+  scope.bankIds.forEach(bid=>{ (store.wrong[bid]||[]).forEach(w=>out.push(w)); });
+  return out;
+}
+// 作用域进度存储 id(子库用自身 id;总库用合成 id)
+function scopeProgressId(){ return scope.kind==="total" ? ("__total__::"+scope.child) : scope.bankIds[0]; }
+
+/* =========================================================
+   出题:根据模式与年级筛选条目(作用域内,跨子库)
+   ========================================================= */
+function eligibleItems(mode){
+  const items=scopeItems();
+  if(mode==="spell1"||mode==="spell2"){
+    return items.filter(it=> it.type==="word" || (mode==="spell1"&&it.type==="phrase"&&!it.word.includes(" ")));
+  }
+  if(mode==="mean1"||mode==="mean2"){
+    return items.filter(it=> (it.type==="word"||it.type==="phrase") && it.meaning);
+  }
+  if(mode==="cloze"){
+    return items.filter(it=> (it.example && it.example.split(" ").length>=2) );
+  }
+  return items;
+}
+
+/* =========================================================
+   游戏主循环
+   ========================================================= */
+let game=null; // {mode, queue:[], idx, correct, startTs, qStartTs, fromWrong}
+
+function startGame(mode, fromWrong){
+  const raw=$("qcount").value;
+  const wantAll=(raw==="0"); // 0 = 全部单词(考前查缺补漏,每个词各一次)
+  let pool;
+  if(fromWrong){
+    pool=scopeWrongItems().filter(it=>isItemUsable(mode,it));
+    if(pool.length===0){ toast("错题本里没有适合这个模式的题 🙂"); return; }
+  } else {
+    pool=eligibleItems(mode);
+    if(pool.length===0){ toast("这个词库没有适合该模式的内容 🙂"); return; }
+  }
+  // 题数:"全部"取满池(每词各一次,不重复);否则按所选数(不足允许重复)
+  let n;
+  if(wantAll) n=pool.length;
+  else n=Math.min(parseInt(raw,10), Math.max(pool.length, 3));
+  // 题目数量不足时允许重复
+  let queue=shuffle(pool);
+  while(queue.length<n) queue=queue.concat(shuffle(pool));
+  queue=queue.slice(0,n);
+
+  game={ mode, queue, idx:0, correct:0, fromWrong,
+         startTs:Date.now(), qStartTs:0, attempted:false };
+  $("gameCrumbs").textContent=(fromWrong?"📒 错题练习 · ":"")+(scope.kind==="total"?"总库 · ":"")+modeTitle(mode);
+  show("game");
+  nextQuestion();
+}
+function modeTitle(m){ return (MODES.find(x=>x.id===m)||{}).title||m; }
+
+function nextQuestion(){
+  if(game.idx>=game.queue.length){ finishGame(); return; }
+  const total=game.queue.length;
+  $("qProgress").textContent=`第 ${game.idx+1} / ${total} 题`;
+  $("qScore").textContent="⭐ "+game.correct;
+  $("qbar").style.width=(game.idx/total*100)+"%";
+  $("feedback").textContent=""; $("feedback").className="feedback";
+  game.attempted=false;
+  game.qStartTs=Date.now();
+  const it=game.queue[game.idx];
+  const render={spell1:renderSpell1,spell2:renderSpell2,mean1:renderMean1,mean2:renderMean2,cloze:renderCloze}[game.mode];
+  render(it);
+}
+
+/* 判定一道题结束:记录正误、超时、错题本、统计 */
+function judge(it, isRight){
+  if(game.attempted) return; // 防重复
+  game.attempted=true;
+  const elapsed=(Date.now()-game.qStartTs)/1000;
+  const bid=it._bid;                       // 错题归属其来源子库
+  const key=itemKey(bid, it);
+
+  let slow=false;
+  if(isRight){
+    slow=recordTimingAndCheckSlow(game.mode, elapsed); // 仅答对才计入耗时统计
+  }
+
+  if(isRight && !slow){
+    game.correct++;
+    // 错题本中:连续答对 +1,够 3 次毕业
+    if(game.fromWrong) bumpWrongStreak(bid, key, true);
+    else if(isInWrong(bid, key)) bumpWrongStreak(bid, key, true);
+    flash(true, slow, it);
+  } else {
+    // 答错,或答对但太慢 -> 进错题本
+    addToWrong(bid, key);
+    if(game.fromWrong) bumpWrongStreak(bid, key, false); // 错题练习里做错,连击清零
+    flash(false, slow && isRight, it);
+  }
+  saveStore();
+}
+
+function flash(ok, slowButRight, it){
+  const fb=$("feedback");
+  if(ok){
+    fb.innerHTML=pick(["太棒了! 🎉","真厉害! ⭐","答对啦! 👍","完美! 💯"]);
+    fb.className="feedback ok";
+    setTimeout(()=>{ game.idx++; nextQuestion(); }, 900);
+  } else {
+    // 答错或超时答对:显示正确答案,停留 3 秒方便孩子记忆
+    const head = slowButRight ? "对了,但有点慢——记住它 ⏱️" : "没关系,正确答案是 💪";
+    const ipa = it.ipa ? ` <span class="ans-ipa">${it.ipa}</span>` : "";
+    fb.innerHTML=`<div class="ans-head">${head}</div><div class="ans-word">${it.word}${ipa}</div>${it.meaning?`<div class="ans-mean">${it.meaning}</div>`:""}`;
+    fb.className="feedback no show-answer";
+    setTimeout(()=>{ game.idx++; nextQuestion(); }, 3000);
+  }
+}
+
+/* ---------- 耗时统计(Welford 在线均值/方差,按题型) ---------- */
+function recordTimingAndCheckSlow(mode, x){
+  const t=store.timing[mode] || {n:0,mean:0,m2:0};
+  let slow=false;
+  if(t.n>=10){
+    const sd=Math.sqrt(t.m2/(t.n-1));
+    if(x > t.mean + sd) slow=true; // 超过 μ+1σ
+  }
+  // 更新统计
+  t.n++; const d=x-t.mean; t.mean+=d/t.n; const d2=x-t.mean; t.m2+=d*d2;
+  store.timing[mode]=t;
+  return slow;
+}
+
+/* ---------- 错题本(按子库 bid 存储) ---------- */
+function getWrong(bid){ return store.wrong[bid]=store.wrong[bid]||[]; }
+function isInWrong(bid, key){ return getWrong(bid).some(w=>w.key===key); }
+function addToWrong(bid, key){
+  const w=getWrong(bid);
+  if(!w.some(x=>x.key===key)) w.push({key, streak:0});
+}
+function bumpWrongStreak(bid, key, correct){
+  const w=getWrong(bid); const e=w.find(x=>x.key===key); if(!e) return;
+  if(correct){ e.streak=(e.streak||0)+1; if(e.streak>=3){ store.wrong[bid]=w.filter(x=>x.key!==key); } }
+  else { e.streak=0; }
+}
+
+/* =========================================================
+   虚拟键盘
+   ========================================================= */
+const KB_ROWS=[
+  "qwertyuiop".split(""),
+  "asdfghjkl".split(""),
+  "zxcvbnm".split(""),
+];
+function buildKeyboard(showLetters){
+  const kb=$("keyboard"); kb.innerHTML="";
+  if(!showLetters){ kb.style.display="none"; return; }
+  kb.style.display="block";
+  KB_ROWS.forEach(row=>{
+    const r=document.createElement("div"); r.className="krow";
+    row.forEach(ch=>{
+      const k=document.createElement("div"); k.className="key"; k.dataset.k=ch; k.textContent=ch;
+      k.onclick=()=>handleLetter(ch);
+      r.appendChild(k);
+    });
+    kb.appendChild(r);
+  });
+  // 退格行
+  const r=document.createElement("div"); r.className="krow";
+  const bk=document.createElement("div"); bk.className="key wide"; bk.dataset.k="Backspace"; bk.textContent="⌫ 删除";
+  bk.onclick=()=>handleBackspace();
+  r.appendChild(bk); kb.appendChild(r);
+}
+function highlightKey(ch){
+  document.querySelectorAll(".key").forEach(k=>k.classList.remove("hl")); // 先清掉所有高亮
+  if(!store.hintOn || !ch) return; // 闯关默认不提示下一个字母;学习时在模式页打开"字母提示"
+  const k=document.querySelector('.key[data-k="'+ch.toLowerCase()+'"]');
+  if(k) k.classList.add("hl");
+}
+function keyFeedback(ch, good){
+  if(!store.hintOn) return; // 闯关模式连对错颜色都不给,纯考记忆(避免错字母变红变相提示)
+  const k=document.querySelector('.key[data-k="'+ch.toLowerCase()+'"]');
+  if(!k) return;
+  k.classList.add(good?"good":"bad");
+  setTimeout(()=>k.classList.remove(good?"good":"bad"),300);
+}
+
+/* =========================================================
+   模式 ①  拼写闯关 1 — 补全缺字母
+   ========================================================= */
+let spell=null; // {answer, slots:[{ch,fixed,filled}], cursor}
+
+function renderSpell1(it){
+  const word=it.word.toLowerCase();
+  const grade=it._grade||4;
+  const letters=word.split("");
+  const idxLetters=letters.map((c,i)=>({c,i})).filter(o=>/[a-z]/.test(o.c));
+  // 隐藏比例:一年级约 1/3 且偏后,四年级过半随机
+  let hideCount, hideSet=new Set();
+  if(grade<=2){
+    hideCount=Math.max(1, Math.round(idxLetters.length/3));
+    const tail=idxLetters.slice(Math.ceil(idxLetters.length/2)); // 后半段
+    shuffle(tail).slice(0,hideCount).forEach(o=>hideSet.add(o.i));
+  } else {
+    hideCount=Math.max(2, Math.ceil(idxLetters.length*0.6));
+    shuffle(idxLetters).slice(0,hideCount).forEach(o=>hideSet.add(o.i));
+  }
+  const slots=letters.map((c,i)=>{
+    if(c===" ") return {ch:" ", space:true};
+    if(hideSet.has(i)) return {ch:c, fixed:false, filled:false, val:""};
+    return {ch:c, fixed:true};
+  });
+  spell={answer:word, slots, cursor:firstBlank(slots)};
+  drawSpell(it, true);
+}
+
+/* 模式 ② 拼写闯关 2 — 全词默写(全部空格) */
+function renderSpell2(it){
+  const word=it.word.toLowerCase();
+  const grade=it._grade||4;
+  const slots=word.split("").map(c=> c===" "?{ch:" ",space:true}:{ch:c,fixed:false,filled:false,val:""});
+  spell={answer:word, slots, cursor:firstBlank(slots), allowFirstHint:grade<=2};
+  drawSpell(it, false, spell.allowFirstHint);
+}
+
+function firstBlank(slots){ return slots.findIndex(s=>!s.fixed && !s.space); }
+
+function drawSpell(it, isSpell1, allowHint){
+  const card=$("gameCard");
+  card.innerHTML=`
+    <div class="prompt-cn">${it.meaning}</div>
+    <button class="btn small speakbtn" id="spk">🔊 听发音</button>
+    <div class="slots" id="slots"></div>
+    ${it.type==="phrase"?'<p class="hint">这是个词组,注意空格</p>':''}
+    ${allowHint?'<div class="btn-row"><button class="btn gray small" id="hintBtn">💡 提示首字母</button></div>':''}
+  `;
+  $("spk").onclick=()=>speak(it.word);
+  if(allowHint) $("hintBtn").onclick=()=>{
+    const fi=spell.slots.findIndex(s=>!s.fixed&&!s.space&&!s.val);
+    if(fi>=0){ spell.slots[fi].val=spell.answer[fi]; spell.slots[fi].filled=true; advanceCursor(); drawSlots(); checkSpellDone(it); }
+  };
+  drawSlots();
+  buildKeyboard(true);
+  focusHidden();
+  speak(it.word);
+}
+
+function drawSlots(){
+  const wrap=$("slots"); wrap.innerHTML="";
+  spell.slots.forEach((s,i)=>{
+    const d=document.createElement("div");
+    if(s.space){ d.className="slot space"; wrap.appendChild(d); return; }
+    d.className="slot"+(s.fixed?" fixed":"")+(s.filled?" filled":"")+(i===spell.cursor?" cursor":"");
+    d.textContent = s.fixed? s.ch : (s.val||"");
+    wrap.appendChild(d);
+  });
+  // 高亮下一个该敲的键
+  const cur=spell.slots[spell.cursor];
+  highlightKey(cur?cur.ch:null);
+}
+
+function advanceCursor(){
+  let i=spell.cursor+1;
+  while(i<spell.slots.length && (spell.slots[i].fixed||spell.slots[i].space)) i++;
+  spell.cursor = (i<spell.slots.length)? i : -1;
+}
+
+function handleLetter(ch){
+  if(!spell || !game || game.attempted) return;
+  if(spell.cursor<0) return;
+  const cur=spell.slots[spell.cursor];
+  if(!cur || cur.fixed || cur.space) return;
+  const good = ch.toLowerCase()===cur.ch.toLowerCase();
+  keyFeedback(ch, good);
+  cur.val=ch.toLowerCase(); cur.filled=true;
+  advanceCursor();
+  drawSlots();
+  if(game.mode==="cloze") syncBlank();
+  checkSpellDone(game.queue[game.idx]);
+}
+function handleBackspace(){
+  if(!spell || game.attempted) return;
+  // 回退到上一个可填格
+  let i = spell.cursor<0? spell.slots.length-1 : spell.cursor-1;
+  while(i>=0 && (spell.slots[i].fixed||spell.slots[i].space)) i--;
+  if(i>=0){ spell.slots[i].val=""; spell.slots[i].filled=false; spell.cursor=i; drawSlots(); if(game.mode==="cloze") syncBlank(); }
+}
+function checkSpellDone(it){
+  const allFilled=spell.slots.every(s=>s.fixed||s.space||s.val);
+  if(!allFilled) return;
+  const typed=spell.slots.map(s=> s.space?" ":(s.fixed?s.ch:s.val)).join("");
+  judge(it, typed===spell.answer);
+}
+
+/* =========================================================
+   模式 ③ 看词选意思 / ④ 看意思选词
+   ========================================================= */
+function buildOptions(it, key){
+  // key = "meaning" 或 "word";干扰项取自整个作用域
+  const pool=scopeItems().filter(x=>x[key] && x[key]!==it[key] && (x.type==="word"||x.type==="phrase"));
+  const distract=shuffle(pool).slice(0,3).map(x=>x[key]);
+  const opts=shuffle([it[key], ...distract]);
+  // 不足 4 个也可
+  return opts;
+}
+function renderMean1(it){ // 看英文,选中文
+  const opts=buildOptions(it,"meaning");
+  drawChoice(it, it.word, it.ipa, opts, it.meaning, true);
+}
+function renderMean2(it){ // 看中文,选英文
+  const opts=buildOptions(it,"word");
+  drawChoice(it, it.meaning, "", opts, it.word, false);
+}
+function drawChoice(it, promptText, ipa, opts, answer, speakIt){
+  const card=$("gameCard");
+  card.innerHTML=`
+    <div class="prompt-cn">${promptText}</div>
+    ${ipa?`<div class="prompt-ipa">${ipa}</div>`:""}
+    ${speakIt?'<button class="btn small speakbtn" id="spk">🔊 听发音</button>':''}
+    <div class="options" id="opts"></div>
+    <p class="hint">用键盘按 1 / 2 / 3 / 4 选择</p>`;
+  if(speakIt){ $("spk").onclick=()=>speak(it.word); speak(it.word); }
+  const wrap=$("opts");
+  opts.forEach((o,i)=>{
+    const d=document.createElement("div"); d.className="option"; d.dataset.val=o;
+    d.innerHTML=`<span class="num">${i+1}</span><span>${o}</span>`;
+    d.onclick=()=>chooseOption(it, d, o===answer, answer);
+    wrap.appendChild(d);
+  });
+  buildKeyboard(false);
+  game._opts={answer, nodes:[...wrap.children]};
+}
+function chooseOption(it, node, isRight, answer){
+  if(game.attempted) return;
+  node.classList.add(isRight?"right":"wrong");
+  if(!isRight){ // 标出正确答案
+    game._opts.nodes.forEach(n=>{ if(n.dataset.val===answer) n.classList.add("right"); });
+  }
+  judge(it, isRight);
+}
+
+/* =========================================================
+   模式 ⑤ 完形填空 — 句中敲词
+   ========================================================= */
+function renderCloze(it){
+  // 用例句;挖掉目标词(it.word 的核心)
+  const sentence=it.example;
+  const target=it.word.toLowerCase();
+  // 找到句中目标词的位置(忽略大小写,整词)
+  const re=new RegExp("\\b"+escapeReg(target)+"\\b","i");
+  let display=sentence, found=re.test(sentence);
+  let answer=target;
+  if(!found){
+    // 例句里没有原词时,退化为默写该词(挖整词)
+    display=sentence; answer=target;
+  }
+  spell={answer, slots:answer.split("").map(c=> c===" "?{ch:" ",space:true}:{ch:c,fixed:false,filled:false,val:""}),
+         cursor:0};
+  spell.cursor=firstBlank(spell.slots);
+
+  const card=$("gameCard");
+  const blanked = found? sentence.replace(re,'<span class="blank" id="blankSpot">____</span>')
+                       : sentence+' <span class="blank" id="blankSpot">____</span>';
+  card.innerHTML=`
+    <div class="sentence">${blanked}</div>
+    ${it.exampleMeaning?`<div class="prompt-cn" style="font-size:18px;color:var(--muted)">${it.exampleMeaning}</div>`:""}
+    <div class="prompt-ipa">提示:${it.meaning}</div>
+    <button class="btn small speakbtn" id="spk">🔊 听整句</button>
+    <div class="slots" id="slots"></div>`;
+  $("spk").onclick=()=>speak(sentence);
+  drawClozeSlots();
+  buildKeyboard(true);
+  focusHidden();
+  speak(sentence);
+}
+function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function drawClozeSlots(){
+  drawSlots();
+  // 同步更新句中空格显示
+  const spot=$("blankSpot");
+  if(spot){ const typed=spell.slots.map(s=>s.space?" ":(s.val||"_")).join(""); spot.textContent=typed; }
+}
+// 复用 handleLetter / checkSpellDone:cloze 下输入会同步更新句中空格(见 handleLetter)
+
+/* =========================================================
+   键盘事件(物理键盘)
+   ========================================================= */
+function focusHidden(){ const h=$("hiddenInput"); if(h){ h.value=""; setTimeout(()=>h.focus(),50); } }
+
+document.addEventListener("keydown",(e)=>{
+  if(!$("screen-game").classList.contains("active")) return;
+  if(!game || game.attempted) return;
+  const k=e.key;
+  // 选择题:数字键
+  if((game.mode==="mean1"||game.mode==="mean2") && /^[1-4]$/.test(k)){
+    const idx=parseInt(k,10)-1; const nodes=game._opts?game._opts.nodes:[];
+    if(nodes[idx]){ e.preventDefault(); nodes[idx].click(); }
+    return;
+  }
+  // 拼写/完形:字母与退格
+  if(game.mode==="spell1"||game.mode==="spell2"||game.mode==="cloze"){
+    if(/^[a-zA-Z]$/.test(k)){ e.preventDefault(); handleLetter(k); }
+    else if(k==="Backspace"){ e.preventDefault(); handleBackspace(); }
+  }
+});
+function syncBlank(){ const spot=$("blankSpot"); if(spot&&spell){ const typed=spell.slots.map(s=>s.space?" ":(s.val||"_")).join(""); spot.textContent=typed; } }
+
+/* =========================================================
+   结算
+   ========================================================= */
+function finishGame(){
+  const total=game.queue.length;
+  const correct=game.correct;
+  const secs=Math.round((Date.now()-game.startTs)/1000);
+  const ratio=correct/total;
+  let stars = ratio>=1?3 : ratio>=0.7?2 : ratio>=0.4?1 : 0;
+  // 记录最佳星数(按作用域)
+  if(!game.fromWrong){
+    const pid=scopeProgressId();
+    const p=store.progress[pid]||{stars:0};
+    p.stars=Math.max(p.stars||0, stars); store.progress[pid]=p; saveStore();
+  }
+  $("resultEmoji").textContent = stars===3?"🏆": stars>=1?"🎉":"💪";
+  $("resultStars").textContent = "⭐".repeat(stars)+"☆".repeat(3-stars);
+  $("resultScore").textContent = `答对 ${correct} / ${total} 题`;
+  $("resultTime").textContent = `用时 ${secs} 秒`;
+  const wrongNow=scopeWrong().length;
+  $("resultWrong").textContent = `📒 ${scope.kind==="total"?"总库":"本子库"}错题本现有 ${wrongNow} 题`;
+  $("againBtn").onclick=()=>startGame(game.mode, game.fromWrong);
+  show("result");
+}
+
+/* =========================================================
+   备份导入导出 / 词库管理
+   ========================================================= */
+function exportBackup(){
+  const blob=new Blob([JSON.stringify(store,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="单词闯关备份.json";
+  a.click();
+  toast("已导出备份 📤");
+}
+function importBackup(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const data=JSON.parse(r.result);
+      if(data.banks){ store=data; saveStore(); renderBanks(); toast("备份已导入 ✅"); }
+      else toast("这不是备份文件 😕");
+    }catch(e){ toast("文件读取失败 😕"); }
+  };
+  r.readAsText(file);
+}
+function manageBanks(){
+  const ids=Object.keys(store.banks);
+  if(ids.length===0){ toast("还没有词库"); return; }
+  const name=prompt("输入要删除的词库完整名称(留空取消)。\n现有词库:\n"+ids.join("\n"));
+  if(name && store.banks[name]){
+    delete store.banks[name]; delete store.progress[name]; delete store.wrong[name];
+    saveStore(); renderBanks(); toast("已删除:"+name);
+  } else if(name){ toast("没找到这个词库"); }
+}
+
+/* =========================================================
+   事件绑定 & 启动
+   ========================================================= */
+
+$("importBackup").addEventListener("change",(e)=>{ if(e.target.files[0]) importBackup(e.target.files[0]); e.target.value=""; });
+$("exportBackup").onclick=exportBackup;
+$("hintToggle").onclick=()=>{
+  store.hintOn=!store.hintOn;
+  saveStore();
+  updateHintToggle();
+};
+function updateHintToggle(){
+  const b=$("hintToggle");
+  b.textContent="💡 字母提示："+(store.hintOn?"开":"关");
+  b.classList.toggle("green", store.hintOn);
+  b.classList.toggle("gray", !store.hintOn);
+}
+
+$("practiceWrong").onclick=()=>{
+  // 错题练习:在作用域错题里挑一个有题的模式开练
+  const wrongItems=scopeWrongItems();
+  if(wrongItems.length===0){ toast("错题本是空的,继续闯关收集错题吧 🙂"); return; }
+  const modesToTry=["spell1","spell2","cloze","mean1","mean2"];
+  for(const m of modesToTry){
+    if(wrongItems.some(it=>isItemUsable(m,it))){ startGame(m,true); return; }
+  }
+  toast("错题本里没有适合的题型 🙂");
+};
+document.querySelectorAll("[data-go]").forEach(b=> b.onclick=()=>show(b.dataset.go));
+
+function isItemUsable(mode,it){
+  if(mode==="spell1"||mode==="spell2") return it.type==="word"||(it.type==="phrase"&&!it.word.includes(" "));
+  if(mode==="mean1"||mode==="mean2") return (it.type==="word"||it.type==="phrase")&&it.meaning;
+  if(mode==="cloze") return it.example && it.example.split(" ").length>=2;
+  return true;
+}
+
+// 启动:注入内嵌全部词库(幂等),再按身份状态决定进欢迎页还是首页
+EMBEDDED_BANKS.forEach(b=>{
+  const id=bankId(b.meta);
+  store.banks[id]={ meta:b.meta, items:b.items };
+  if(!store.progress[id]) store.progress[id]={stars:0};
+  if(!store.wrong[id]) store.wrong[id]=[];
+});
+saveStore();
+if(store.identity){
+  renderBanks();
+} else {
+  show("welcome");
+}
+bindWelcomeCards();
+
+// 调试钩子(便于自动化测试查看内部状态;对正常使用无副作用)
+window._wrt = { getGame:()=>game, getSpell:()=>spell, addBank, startGame, enterBank, enterTotal,
+                store:()=>store, getScope:()=>scope };
+</script>
+</body>
+</html>
