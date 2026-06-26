@@ -699,6 +699,7 @@ const MODES=[
   {id:"mean1",  emoji:"🤔", title:"意思闯关 1", sub:"看单词选意思"},
   {id:"mean2",  emoji:"🔤", title:"意思闯关 2", sub:"看意思选单词"},
   {id:"cloze",  emoji:"📝", title:"完形填空",   sub:"句子里敲出单词"},
+  {id:"prep",   emoji:"🧩", title:"介词专项",   sub:"选对介词填空"},
 ];
 
 let scope=null; // {kind:'bank'|'total', child, title, bankIds:[...]}
@@ -722,6 +723,8 @@ function enterScope(sc){
   $("modeCrumbs").textContent=(sc.child||"")+" · "+sc.title;
   const grid=$("modeGrid"); grid.innerHTML="";
   MODES.forEach(m=>{
+    const hasUsable = scopeItems().some(it=>isItemUsable(m.id, it));
+    if(!hasUsable) return; // 该作用域无此类题(如弟弟无 prep)则不显示此模式卡片
     const tile=document.createElement("div");
     tile.className="tile";
     tile.innerHTML=`<span class="emoji">${m.emoji}</span><div class="t-title">${m.title}</div><div class="t-sub">${m.sub}</div>`;
@@ -829,7 +832,7 @@ function nextQuestion(){
   game.attempted=false;
   game.qStartTs=Date.now();
   const it=game.queue[game.idx];
-  const render={spell1:renderSpell1,spell2:renderSpell2,mean1:renderMean1,mean2:renderMean2,cloze:renderCloze}[game.mode];
+  const render={spell1:renderSpell1,spell2:renderSpell2,mean1:renderMean1,mean2:renderMean2,cloze:renderCloze,prep:renderPrep}[game.mode];
   render(it);
 }
 
@@ -1302,6 +1305,7 @@ function isItemUsable(mode,it){
   if(mode==="spell1"||mode==="spell2") return it.type==="word"||(it.type==="phrase"&&!it.word.includes(" "));
   if(mode==="mean1"||mode==="mean2") return (it.type==="word"||it.type==="phrase")&&it.meaning;
   if(mode==="cloze") return it.example && it.example.split(" ").length>=2;
+  if(mode==="prep") return it.type==="prep" && !!it.prep;
   return true;
 }
 
