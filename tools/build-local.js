@@ -1,7 +1,7 @@
 // ============================================================
 // 生成「单词闯关本地版.html」——全家精装分享版
 // 用法:  node tools/build-local.js
-// 作用:  以 单词闯关开发版.html 为源,内嵌哥哥(四下)+弟弟(一下)共 7 个子库,
+// 作用:  以 单词闯关开发版.html 为源,内嵌哥哥(四下,含介词专项)+弟弟(一下)共 8 个子库,
 //        照片 base64 内嵌,保留身份选择欢迎页,产出纯固化全功能版。
 // ============================================================
 const fs = require('fs');
@@ -13,7 +13,7 @@ const OUT = '单词闯关本地版.html';
 
 let html = fs.readFileSync(path.join(dir, SRC), 'utf8');
 
-// 读取全部 7 个子库
+// 读取全部 8 个子库(哥哥5含介词专项 + 弟弟3)
 const bankFiles = [
   'wordbanks/grade4-u1u2.json',
   'wordbanks/grade4-u3u4.json',
@@ -22,6 +22,7 @@ const bankFiles = [
   'wordbanks/grade1-people-places.json',
   'wordbanks/grade1-body-animals.json',
   'wordbanks/grade1-clothes-sports.json',
+  'wordbanks/grade4-prep.json',
 ];
 const banks = bankFiles.map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')));
 const total = banks.reduce((n, b) => n + b.items.length, 0);
@@ -38,7 +39,7 @@ const reps = [
   { desc: 'LS_KEY + 内嵌数据',
     old: `const LS_KEY = "wordReviewTool.v1";`,
     new: `const LS_KEY = "wordReviewTool.local.v1"; // 本地版独立存储
-// 内嵌哥哥(四下)+弟弟(一下)精品词库(7 子库,共 ${total} 条)
+// 内嵌哥哥(四下)+弟弟(一下)精品词库(8 子库,共 ${total} 条)
 const EMBEDDED_BANKS = ${JSON.stringify(banks)};` },
 
   // 2. 照片路径 → base64 data URI
@@ -204,5 +205,5 @@ check('无照片文件路径', 'src="照片/', 0);
 check('无外部 script src', '<script src="lib/', 0);
 check('EMBEDDED_BANKS', 'const EMBEDDED_BANKS', 1);
 check('LS_KEY local v1', 'wordReviewTool.local.v1', 1);
-check('wordbank total items', '内嵌哥哥(四下)+弟弟(一下)精品词库(7 子库,共 346 条)', 1);
+check('wordbank total items', '内嵌哥哥(四下)+弟弟(一下)精品词库(8 子库,共 '+total+' 条)', 1);
 if (!process.exitCode) console.log('✅ 自检全部通过');

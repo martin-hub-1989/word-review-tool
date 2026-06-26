@@ -13,12 +13,13 @@ const OUT = '单词闯关四年级通关版.html';
 
 let html = fs.readFileSync(path.join(dir, SRC), 'utf8');
 
-// 读取 4 个四年级精品词库
+// 读取 5 个四年级精品词库(含介词专项)
 const bankFiles = [
   'wordbanks/grade4-u1u2.json',
   'wordbanks/grade4-u3u4.json',
   'wordbanks/grade4-u5u6.json',
   'wordbanks/grade4-sihui.json',
+  'wordbanks/grade4-prep.json',
 ];
 const banks = bankFiles.map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')));
 const total = banks.reduce((n, b) => n + b.items.length, 0);

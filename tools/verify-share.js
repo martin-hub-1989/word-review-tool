@@ -29,9 +29,9 @@ for (const b of blocks) {
 try {
   const arrStr = html.split('const EMBEDDED_BANKS = ')[1].split(';\n')[0];
   const emb = JSON.parse(arrStr);
-  emb.length === 4 ? pass('4 个子库: ' + emb.length) : fail('子库数 ' + emb.length);
+  emb.length === 5 ? pass('5 个子库: ' + emb.length) : fail('子库数 ' + emb.length);
   const tot = emb.reduce((n, b) => n + b.items.length, 0);
-  tot === 236 ? pass('共 236 条: ' + tot) : fail('条目数 ' + tot);
+  tot === 286 ? pass('共 286 条: ' + tot) : fail('条目数 ' + tot);
   emb.forEach(b => console.log('   - ' + b.meta.child + '｜' + b.meta.title + ': ' + b.items.length + '条, grade=' + b.meta.grade));
   const bad = emb.flatMap(b => b.items).filter(it => !it.word || !it.type);
   bad.length === 0 ? pass('所有条目字段完整') : fail(bad.length + ' 条缺字段');
