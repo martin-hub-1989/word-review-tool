@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-维护期，无进行中任务。三版本稳定可用，工作区干净，最新提交 `43a02c3` 已推送至 `origin/main`。
+维护期，无进行中任务。三版本稳定可用，工作区干净，最新提交 `a9fd814` 已推送至 `origin/main`。
 
 ## 已完成
 
@@ -33,12 +33,15 @@
 - [x] 冰淇淋彩蛋（累计答对每 50 词兑换 🍦，封顶 5 个，按身份独立统计）
 - [x] 屏幕切换动画（fadeSlideIn）+ 照片弹出特效（popBurst）
 - [x] 备份导入/导出（`JSON.stringify(store)`，自动覆盖所有字段含冰淇淋进度）
+- [x] 发音主动选最自然 voice（`bestEnglishVoice`：自然音 > 高质量本地 > 默认；页面加载预热 voice 列表）→ 提交 `bff07d3`
+- [x] 拼写/完形回车提交（填满不自动判，按回车或"⏎ 提交"键才判；未填满回车提示剩余数）→ 提交 `a9fd814`
 
 ### Bug 修复（近期，含根因）
 - [x] `loadStore` 字段补全（migration）→ 旧版 localStorage 缺 `correctTotal`/`iceCream` 或 `banks=null` 导致启动崩溃（`updateIceCreamDisplay` 抛异常，词库未注入、点击未绑定）→ 提交 `4edf28a`
 - [x] `renderBanks`/`enterTotal` 过滤行加固 → 跳过无 meta/items 的损坏 bank 条目 → `4edf28a`
 - [x] `switchIdentity`/`enterIdentity` 清除 popping → popping 残留导致切换后卡片永久禁用 → `43a02c3`
 - [x] `#screen-welcome.active`（带 .active）→ ID 选择器优先级过高盖住首页 → `a885b4f`
+- [x] 冰淇淋"没出现"排查 → 逻辑代码正确（纯函数验证 ct=50/100/150/200/250 各触发一次，封顶 5）；根因是旧 localStorage 启动崩溃（`4edf28a` 已修），崩溃发生在 judge 之前导致 correctTotal 未累加 → 复核确认 `bff07d3` 后正常
 
 ### 验证工具
 - [x] `tools/verify-share.js`（44 项断言：语法/词库完整/无外部依赖/无悬空引用/开关逻辑/冰淇淋字段）

@@ -92,3 +92,30 @@
 - 冰淇淋进度随身份走，切换身份后统计切换。
 - 备份导出 `JSON.stringify(store)` 自动覆盖这两个字段，无需特殊处理。
 - 显示位置：欢迎页照片下方 `#iceBadge-{name}` + 首页身份栏旁。
+
+---
+
+## 2026-06-25 — 发音主动选最自然 voice（不依赖浏览器默认）
+
+**决定**：`speak()` 增加 `bestEnglishVoice()`，按优先级主动挑英文 voice——神经网络自然音（`Natural`/`Aria`/`Jenny`/`Samantha`/`Google US English` 等）> 高质量本地音 > 默认英文。页面加载时预热 voice 列表（`getVoices()` + `onvoiceschanged`）。
+
+**理由**：原 `speak()` 只设 `lang=en-US` 不指定 voice，把音色选择权交给浏览器默认。Windows 上第三方套壳浏览器（如豆包）常退化成旧 SAPI5 机器音（David/Zira），听感生硬——用户反馈"发音变生硬"即因此（非代码回归，`speak` 从未改）。主动选 voice 可在 voice 齐全的浏览器保证选到最自然音。
+
+**影响**：
+- 新增 `NATURAL_HINTS` / `GOOD_HINTS` 常量与 `bestEnglishVoice()` 函数，三版本经 build 脚本同步。
+- **诚实限定**：若浏览器根本没加载任何自然 voice（被墙/离线/精简），代码无法凭空生成好音色，只能换浏览器。诊断页 `tools/语音诊断-Windows.html` 可查实际用了哪个 voice。
+- voice 名称匹配靠关键字，未来新 voice 若不含已知关键字会落到"默认英文"档，需适时补 `NATURAL_HINTS`。
+
+---
+
+## 2026-06-25 — 拼写/完形填满后按回车提交（不自动判）
+
+**决定**：拼写闯关 1/2 和完形填空模式，所有空格填满后**不自动提交**，停在已填满状态（可退格修改），按回车（物理 Enter 或虚拟键盘"⏎ 提交"键）才判对错。未填满按回车提示"还有 N 个字母没填"，不提交。
+
+**理由**：原 `checkSpellDone()` 每输一字母即检查，填满即自动 `judge`——导致敲最后字母时若敲错没有修改余地就被判。用户明确要求改为回车提交。选择题（数字键 1-4）保持"选择即提交"不变，因不涉及"最后字母"问题。
+
+**影响**：
+- `checkSpellDone` 不再自动 `judge`，只标记 `spell.cursor=-1` + 显示"按回车提交"提示；新增 `submitSpell(it)` 承担原 judge 职责。
+- 三模式复用同一 `spell` 结构，改一处全生效。
+- 填满后 `cursor=-1`，继续敲字母会被挡（`handleLetter` 开头 `cursor<0 return`）；改字靠退格回退。若未来要支持"填满后覆盖最后字母"，需调整该判断。
+- `keydown` 加 `Enter` 分支；虚拟键盘 `buildKeyboard` 加"⏎ 提交"键（触屏等价回车）。
