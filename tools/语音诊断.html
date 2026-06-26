@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>语音合成诊断</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", sans-serif; max-width: 760px; margin: 24px auto; padding: 0 18px; color: #2b2a2e; }
+  h1 { font-size: 20px; }
+  .card { background: #fffdfa; border: 1px solid #ece5db; border-radius: 14px; padding: 16px 20px; margin: 14px 0; }
+  button { background: #5b8def; color: #fff; border: none; border-radius: 10px; padding: 9px 16px; font-size: 15px; cursor: pointer; margin: 4px 6px 4px 0; }
+  button.gray { background: #fff; color: #6b6b6b; border: 1px solid #ddd; }
+  pre { background: #f6f4ef; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; }
+  .ok { color: #2a7d6f; font-weight: 700; }
+  .bad { color: #cf5a45; font-weight: 700; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  td, th { border: 1px solid #eee; padding: 6px 8px; text-align: left; }
+  th { background: #f1ece4; }
+  input[type=text] { padding: 8px; border: 1px solid #ddd; border-radius: 8px; width: 200px; font-size: 15px; }
+</style>
+</head>
+<body>
+<h1>🔊 语音合成 (speechSynthesis) 诊断</h1>
+
+<div class="card">
+  <b>1. 浏览器是否支持</b>
+  <p id="support"></p>
+</div>
+
+<div class="card">
+  <b>2. 可用的 voice 列表</b>
+  <p id="vcount"></p>
+  <table id="vtable"></table>
+  <p class="hint" style="color:#9b948c;font-size:13px">若列表为空：voice 异步加载，稍等几秒后点「重新加载列表」。macOS 上应能看到 Samantha / Ava / Google US English 等高质量英文 voice。</p>
+  <p>
+    <button class="gray" onclick="loadVoices()">重新加载列表</button>
+    <button class="gray" onclick="loadVoices(); setTimeout(loadVoices, 1500)">加载并等 1.5s 再读一次</button>
+  </p>
+</div>
+
+<div class="card">
+  <b>3. 复现工具里的发音（与项目 speak() 完全相同的代码）</b>
+  <p>
+    <input type="text" id="word" value="library">
+    <button onclick="speakLikeProject()">🔊 用项目代码发音</button>
+  </p>
+  <p class="hint" style="color:#9b948c;font-size:13px">这段代码和 单词闯关*.html 里的 speak() 一字不差：lang=en-US, rate=0.85，不指定 voice。</p>
+</div>
+
+<div class="card">
+  <b>4. 逐个 voice 试听（找出最自然的那个）</b>
+  <p>
+    <button onclick="testAllVoices()">🔊 用每个 en voice 各读一遍 "library"</button>
+  </p>
+  <p class="hint" style="color:#9b948c;font-size:13px">会依次用每个英文 voice 读同一个词，听哪个最自然。把最自然的 voice 名字告诉我。</p>
+  <pre id="testlog"></pre>
+</div>
+
+<div class="card">
+  <b>5. 当前实际使用的 voice</b>
+  <p>点上面「用项目代码发音」后，这里显示浏览器实际选了哪个 voice：</p>
+  <pre id="usedVoice">(发音后会显示)</pre>
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+
+// 项目里一字不差的 speak()
+function speakLikeProject(){
+  const text = $("word").value || "library";
+  if(!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US"; u.rate = 0.85;
+  // 记录浏览器实际选的 voice
+  u.onstart = function(){
+    const v = speechSynthesis.getVoices();
+    // 不指定 voice 时,浏览器按 lang 自动匹配,这里尽力推断
+    $("usedVoice").textContent = "未显式指定 voice,浏览器按 lang=en-US 自动选择。\n" +
+      "可用的 en-US/en voice:\n" +
+      v.filter(x => x.lang && x.lang.toLowerCase().startsWith("en"))
+       .map(x => "  - " + x.name + " (" + x.lang + (x.default ? ", 默认" : "") + ")")
+       .join("\n");
+  };
+  speechSynthesis.speak(u);
+}
+
+function loadVoices(){
+  const v = speechSynthesis.getVoices();
+  $("vcount").innerHTML = "共 <b>" + v.length + "</b> 个 voice";
+  let html = "<tr><th>#</th><th>name</th><th>lang</th><th>localService</th><th>默认?</th></tr>";
+  v.forEach((x, i) => {
+    const en = x.lang && x.lang.toLowerCase().startsWith("en");
+    html += "<tr" + (en ? ' style="background:#e3f3ef"' : "") + "><td>" + i + "</td><td>" + x.name + "</td><td>" + x.lang + "</td><td>" + (x.localService ? "本地" : "网络") + "</td><td>" + (x.default ? "✓" : "") + "</td></tr>";
+  });
+  $("vtable").innerHTML = html;
+}
+
+function testAllVoices(){
+  const v = speechSynthesis.getVoices().filter(x => x.lang && x.lang.toLowerCase().startsWith("en"));
+  if(v.length === 0){ $("testlog").textContent = "没有英文 voice,先点「重新加载列表」"; return; }
+  $("testlog").textContent = "开始逐个试听 " + v.length + " 个英文 voice...\n";
+  let i = 0;
+  function next(){
+    if(i >= v.length){ $("testlog").textContent += "\n完成。"; return; }
+    const voice = v[i];
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance("library");
+    u.voice = voice;
+    u.lang = voice.lang;
+    u.rate = 0.85;
+    $("testlog").textContent += "[" + (i+1) + "/" + v.length + "] " + voice.name + " (" + voice.lang + ")...\n";
+    $("testlog").scrollTop = 1e9;
+    u.onend = function(){ i++; setTimeout(next, 400); };
+    u.onerror = function(){ i++; setTimeout(next, 200); };
+    speechSynthesis.speak(u);
+  }
+  next();
+}
+
+// 初始化
+$("support").innerHTML = window.speechSynthesis
+  ? '<span class="ok">✅ 支持 speechSynthesis</span> · user agent: ' + navigator.userAgent
+  : '<span class="bad">❌ 不支持</span>';
+
+loadVoices();
+// voices 异步加载:首次往往为空,监听 voiceschanged
+if(window.speechSynthesis){
+  speechSynthesis.onvoiceschanged = loadVoices;
+  setTimeout(loadVoices, 500);
+  setTimeout(loadVoices, 1500);
+}
+</script>
+</body>
+</html>

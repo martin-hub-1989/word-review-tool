@@ -389,12 +389,36 @@ function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
 function itemKey(bankId,it){ return bankId+"::"+it.word; }
 
 /* ---------- 发音(Web Speech API) ---------- */
+// 不指定 voice 时浏览器按 lang 自动选默认 voice,Windows 上常退化成旧 SAPI5 机器音(生硬)。
+// 这里主动挑最自然的可用英文 voice:神经网络自然音 > 本地高质量 > 其他英文 > 兜底默认。
+const NATURAL_HINTS=["natural","aria","jenny","guy","emma","sara","samantha","ava","serena","google us"];
+const GOOD_HINTS=["zira","susan","heather","fiona","karen","moira"];
+function bestEnglishVoice(){
+  const vs=speechSynthesis.getVoices();
+  if(!vs || !vs.length) return null;
+  const en=vs.filter(v=>v.lang && v.lang.toLowerCase().indexOf("en")===0);
+  if(!en.length) return null;
+  // 优先级 1:名称含 natural/neural 等的神经网络自然音
+  let pick=en.find(v=>NATURAL_HINTS.some(h=>v.name.toLowerCase().indexOf(h)>=0));
+  // 优先级 2:已知较自然的高质量本地音(macOS/旧版较好者)
+  if(!pick) pick=en.find(v=>GOOD_HINTS.some(h=>v.name.toLowerCase().indexOf(h)>=0));
+  // 优先级 3:默认英文 voice
+  if(!pick) pick=en.find(v=>v.default) || en[0];
+  return pick;
+}
+// 预热:voice 列表异步加载,页面加载时先触发一次,并在加载完成时缓存
+if(window.speechSynthesis){
+  speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices();
+}
 function speak(text){
   if(!text || !window.speechSynthesis) return;
   try {
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(text);
     u.lang="en-US"; u.rate=0.85;
+    const v=bestEnglishVoice();
+    if(v) u.voice=v;
     speechSynthesis.speak(u);
   } catch(e){}
 }

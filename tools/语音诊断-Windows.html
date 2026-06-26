@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>语音合成诊断（Windows 用）</title>
+<style>
+  body{font-family:-apple-system,"Microsoft YaHei",sans-serif;max-width:780px;margin:24px auto;padding:0 18px;color:#2b2a2e;}
+  h1{font-size:20px;}
+  .card{background:#fffdfa;border:1px solid #ece5db;border-radius:14px;padding:16px 20px;margin:14px 0;}
+  button{background:#5b8def;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:15px;cursor:pointer;margin:4px 6px 4px 0;}
+  button.gray{background:#fff;color:#6b6b6b;border:1px solid #ddd;}
+  pre{background:#f6f4ef;padding:12px;border-radius:8px;font-size:12px;overflow-x:auto;white-space:pre-wrap;}
+  table{border-collapse:collapse;width:100%;font-size:13px;}
+  td,th{border:1px solid #eee;padding:6px 8px;text-align:left;}
+  th{background:#f1ece4;}
+  .hint{color:#9b948c;font-size:13px;}
+  .ok{color:#2a7d6f;font-weight:700;}
+  .bad{color:#cf5a45;font-weight:700;}
+  input[type=text]{padding:8px;border:1px solid #ddd;border-radius:8px;width:200px;font-size:15px;}
+  .natural{background:#e3f3ef !important;}
+  .machine{background:#fbeae5 !important;}
+</style>
+</head>
+<body>
+<h1>🔊 语音合成诊断</h1>
+<p class="hint">把这个页面在<b>豆包浏览器</b>和<b>另一个浏览器</b>里各打开一次，对比两边的 voice 列表。</p>
+
+<div class="card">
+  <b>① 浏览器信息</b>
+  <p id="browser"></p>
+</div>
+
+<div class="card">
+  <b>② 可用的英文 voice 列表</b>
+  <p id="vcount"></p>
+  <table id="vtable"></table>
+  <p class="hint">绿色=神经网络自然语音(理想),红色=旧 SAPI5 机器音(生硬)。<br>若列表为空:voice 异步加载,点下面的按钮,或等几秒。</p>
+  <p>
+    <button class="gray" onclick="loadVoices()">🔄 重新加载列表</button>
+    <button class="gray" onclick="loadVoices();setTimeout(loadVoices,2000)">加载并等2秒</button>
+  </p>
+</div>
+
+<div class="card">
+  <b>③ 复现单词闯关里的发音</b>
+  <p>
+    <input type="text" id="word" value="library">
+    <button onclick="speakLikeProject()">🔊 用项目代码发音</button>
+  </p>
+  <p class="hint">这段代码和 单词闯关*.html 的 speak() 完全一致:lang=en-US, rate=0.85,不指定 voice。</p>
+</div>
+
+<div class="card">
+  <b>④ 逐个 voice 试听</b>
+  <p>
+    <button onclick="testAllVoices()">🔊 用每个英文 voice 各读一遍</button>
+  </p>
+  <p class="hint">听哪个最自然,记下它的名字(下面会显示)。</p>
+  <pre id="testlog"></pre>
+</div>
+
+<div class="card">
+  <b>⑤ 一键复制结果发给我</b>
+  <p class="hint">点下面按钮,把整段结果复制出来贴给我,我就能确认根因并给出最佳 voice 选择。</p>
+  <p><button onclick="copyReport()">📋 复制诊断报告</button></p>
+  <pre id="report" style="display:none"></pre>
+</div>
+
+<script>
+function $(id){return document.getElementById(id);}
+var usedVoice = "(未发音)";
+
+// 标记哪些 voice 是自然的(Windows/Edge/Google 在线自然语音),哪些是旧机器音
+function voiceQuality(name){
+  var n = (name||"").toLowerCase();
+  var natural = ["natural","aria","jenny","guy","emma","sara","google us","google 英语","samantha","ava","serena"];
+  var machine = ["david","zira","mark","susan","heather","hazel","george","paul","mary","anna"];
+  for(var i=0;i<natural.length;i++) if(n.indexOf(natural[i])>=0) return "natural";
+  for(var i=0;i<machine.length;i++) if(n.indexOf(machine[i])>=0) return "machine";
+  return "unknown";
+}
+
+function speakLikeProject(){
+  var text = $("word").value || "library";
+  if(!window.speechSynthesis){alert("不支持 speechSynthesis");return;}
+  speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US"; u.rate = 0.85;
+  u.onstart = function(){
+    var v = speechSynthesis.getVoices();
+    var en = v.filter(function(x){return x.lang && x.lang.toLowerCase().indexOf("en")===0;});
+    usedVoice = "未指定 voice,浏览器按 lang=en-US 自动选。可用英文 voice:\n" +
+      en.map(function(x){return "  - "+x.name+" ("+x.lang+(x.default?", 默认":"")+") ["+voiceQuality(x.name)+"]";}).join("\n");
+  };
+  speechSynthesis.speak(u);
+  setTimeout(function(){ if(usedVoice.indexOf("未发音")>=0) usedVoice="(发音未触发 onstart,可能 voice 加载中)"; }, 1500);
+}
+
+function loadVoices(){
+  var v = speechSynthesis.getVoices();
+  $("vcount").innerHTML = "共 <b>"+v.length+"</b> 个 voice";
+  var html = "<tr><th>#</th><th>name</th><th>lang</th><th>类型</th><th>默认?</th></tr>";
+  v.forEach(function(x,i){
+    var q = voiceQuality(x.name);
+    var cls = q==="natural"?"natural":(q==="machine"?"machine":"");
+    html += '<tr class="'+cls+'"><td>'+i+'</td><td>'+x.name+'</td><td>'+x.lang+'</td><td>'+
+      (q==="natural"?"✨ 自然":(q==="machine"?"🤖 机器":"未知"))+'</td><td>'+(x.default?"✓":"")+'</td></tr>';
+  });
+  $("vtable").innerHTML = html;
+}
+
+function testAllVoices(){
+  var v = speechSynthesis.getVoices().filter(function(x){return x.lang && x.lang.toLowerCase().indexOf("en")===0;});
+  if(v.length===0){$("testlog").textContent="没有英文 voice,先点「重新加载列表」";return;}
+  $("testlog").textContent = "逐个试听 "+v.length+" 个英文 voice...\n";
+  var i=0;
+  function next(){
+    if(i>=v.length){$("testlog").textContent+="\n完成。把最自然的名字记下来。";return;}
+    var voice = v[i];
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance("library");
+    u.voice = voice; u.lang = voice.lang; u.rate = 0.85;
+    $("testlog").textContent += "["+(i+1)+"/"+v.length+"] "+voice.name+" ("+voice.lang+") ["+voiceQuality(voice.name)+"]...\n";
+    $("testlog").scrollTop = 1e9;
+    u.onend = function(){i++;setTimeout(next,500);};
+    u.onerror = function(){i++;setTimeout(next,200);};
+    speechSynthesis.speak(u);
+  }
+  next();
+}
+
+function copyReport(){
+  var v = speechSynthesis.getVoices();
+  var en = v.filter(function(x){return x.lang && x.lang.toLowerCase().indexOf("en")===0;});
+  var rep = "=== 语音诊断报告 ===\n";
+  rep += "浏览器 UA: "+navigator.userAgent+"\n\n";
+  rep += "全部 voice 数: "+v.length+"\n";
+  rep += "英文 voice 数: "+en.length+"\n\n";
+  rep += "英文 voice 列表:\n";
+  en.forEach(function(x){rep += "  - "+x.name+" | "+x.lang+" | "+(x.default?"默认":"")+" | "+voiceQuality(x.name)+"\n";});
+  rep += "\n发音实际使用: "+usedVoice+"\n";
+  rep += "\n(把这段发回给我即可)\n";
+  $("report").textContent = rep;
+  $("report").style.display = "block";
+  navigator.clipboard.writeText(rep).then(function(){alert("已复制到剪贴板,直接粘贴发给我就行。");}, function(){alert("复制失败,请手动选中下方文本复制。");});
+}
+
+$("browser").innerHTML = "userAgent: "+navigator.userAgent;
+loadVoices();
+if(window.speechSynthesis){
+  speechSynthesis.onvoiceschanged = loadVoices;
+  setTimeout(loadVoices, 800);
+  setTimeout(loadVoices, 2000);
+}
+</script>
+</body>
+</html>
