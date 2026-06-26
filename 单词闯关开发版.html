@@ -232,13 +232,13 @@
       <p class="welcome-sub">谁要来闯关？点一下头像吧！</p>
       <div class="identity-cards">
         <div class="id-card" data-child="哥哥">
-          <img src="照片/哥哥.jpg" alt="哥哥" class="id-photo">
+          <img src="照片/哥哥-超Q版.jpg" alt="哥哥" class="id-photo">
           <div class="id-name">哥哥</div>
           <div class="id-grade">四年级</div>
           <div class="ice-badge" id="iceBadge-哥哥"></div>
         </div>
         <div class="id-card" data-child="弟弟">
-          <img src="照片/弟弟.jpg" alt="弟弟" class="id-photo">
+          <img src="照片/弟弟-超Q版.jpg" alt="弟弟" class="id-photo">
           <div class="id-name">弟弟</div>
           <div class="id-grade">一年级</div>
           <div class="ice-badge" id="iceBadge-弟弟"></div>
@@ -1202,12 +1202,11 @@ function renderPrep(it){
   }
   card.innerHTML=`
     <div class="prompt-cn">${it.meaning}</div>
-    <button class="btn small speakbtn" id="spk">🔊 听发音</button>
     <div class="prep-q">${colHTML}</div>
     ${exHTML?`<div class="prep-example">${exHTML}</div>`:""}
     <div class="options" id="opts"></div>
     <p class="hint">用键盘按 1 / 2 / 3 / 4 选择</p>`;
-  $("spk").onclick=()=>speak(it.word);
+  // 注:介词模块不设发音按钮/不自动朗读——介词读音会暴露答案中的介词
   const opts=buildPrepOptions(it);
   const wrap=$("opts");
   opts.forEach((o,i)=>{
@@ -1218,7 +1217,6 @@ function renderPrep(it){
   });
   buildKeyboard(false);
   game._opts={answer:it.prep, nodes:[...wrap.children]};
-  speak(it.word);
 }
 function buildPrepOptions(it){
   const correct=it.prep;

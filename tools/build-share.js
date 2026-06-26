@@ -25,13 +25,13 @@ const banks = bankFiles.map(f => JSON.parse(fs.readFileSync(path.join(dir, f), '
 const total = banks.reduce((n, b) => n + b.items.length, 0);
 console.log(`内嵌词库: ${banks.length} 个子库, 共 ${total} 条`);
 
-// 读取哥哥照片(游戏界面右上角用),先压缩再 base64
+// 读取哥哥照片(超Q版,游戏界面右上角用),先压缩再 base64
 const { execSync } = require('child_process');
-const gegeSrc = path.join(dir, '照片/哥哥.jpg');
-const gegeTmp = '/tmp/gege_300_build.jpg';
-if (!fs.existsSync(gegeTmp)) execSync('sips -Z 300 "' + gegeSrc + '" --out "' + gegeTmp + '"');
+const gegeSrc = path.join(dir, '照片/哥哥-超Q版.jpg');
+const gegeTmp = '/tmp/gege_q_share_300.jpg';
+execSync('sips -Z 300 "' + gegeSrc + '" --out "' + gegeTmp + '"');
 const gegeB64 = fs.readFileSync(gegeTmp).toString('base64');
-console.log(`哥哥照片 base64: ${(gegeB64.length/1024).toFixed(0)}KB`);
+console.log(`哥哥照片(超Q版) base64: ${(gegeB64.length/1024).toFixed(0)}KB`);
 
 // 替换规则:每个 old 必须唯一命中,否则报错
 const reps = [

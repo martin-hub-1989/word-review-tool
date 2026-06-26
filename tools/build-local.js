@@ -28,10 +28,17 @@ const banks = bankFiles.map(f => JSON.parse(fs.readFileSync(path.join(dir, f), '
 const total = banks.reduce((n, b) => n + b.items.length, 0);
 console.log(`内嵌词库: ${banks.length} 个子库 (哥哥 4 + 弟弟 3), 共 ${total} 条`);
 
-// 读取照片并 base64 编码
-const gegeB64 = fs.readFileSync('/tmp/gege_300.jpg').toString('base64');
-const didiB64 = fs.readFileSync('/tmp/didi_300.jpg').toString('base64');
-console.log(`照片 base64: 哥哥 ${(gegeB64.length/1024).toFixed(0)}KB, 弟弟 ${(didiB64.length/1024).toFixed(0)}KB`);
+// 读取照片并 base64 编码(超Q版,先压缩到300px)
+const { execSync } = require('child_process');
+const gegeSrc = path.join(dir, '照片/哥哥-超Q版.jpg');
+const didiSrc = path.join(dir, '照片/弟弟-超Q版.jpg');
+const gegeTmp = '/tmp/gege_q_300.jpg';
+const didiTmp = '/tmp/didi_q_300.jpg';
+if (!fs.existsSync(gegeTmp)) execSync('sips -Z 300 "' + gegeSrc + '" --out "' + gegeTmp + '"');
+if (!fs.existsSync(didiTmp)) execSync('sips -Z 300 "' + didiSrc + '" --out "' + didiTmp + '"');
+const gegeB64 = fs.readFileSync(gegeTmp).toString('base64');
+const didiB64 = fs.readFileSync(didiTmp).toString('base64');
+console.log(`照片 base64(超Q版): 哥哥 ${(gegeB64.length/1024).toFixed(0)}KB, 弟弟 ${(didiB64.length/1024).toFixed(0)}KB`);
 
 // 替换规则
 const reps = [
@@ -42,12 +49,12 @@ const reps = [
 // 内嵌哥哥(四下)+弟弟(一下)精品词库(8 子库,共 ${total} 条)
 const EMBEDDED_BANKS = ${JSON.stringify(banks)};` },
 
-  // 2. 照片路径 → base64 data URI
+  // 2. 照片路径 → base64 data URI(超Q版)
   { desc: '哥哥照片→base64',
-    old: `src="照片/哥哥.jpg"`,
+    old: `src="照片/哥哥-超Q版.jpg"`,
     new: `src="data:image/jpeg;base64,${gegeB64}"` },
   { desc: '弟弟照片→base64',
-    old: `src="照片/弟弟.jpg"`,
+    old: `src="照片/弟弟-超Q版.jpg"`,
     new: `src="data:image/jpeg;base64,${didiB64}"` },
 
   // 3. 首页"加载词库"按钮 → 删除(纯固化)。保留切换按钮。
@@ -199,8 +206,9 @@ const check = (label, pattern, expect) => {
   const cnt = html.split(pattern).length - 1;
   if (cnt !== expect) { console.log(`⚠️  自检:${label} 命中 ${cnt} 次(期望 ${expect})`); process.exitCode = 1; }
 };
-check('哥哥 base64', 'data:image/jpeg;base64,' + gegeB64.substring(0, 40), 1);
-check('弟弟 base64', 'data:image/jpeg;base64,' + didiB64.substring(0, 40), 1);
+// 注:两张 JPEG 的 base64 头部(EXIF/JFIF)前 ~120 字符相同,故用整串校验唯一性
+check('哥哥 base64', gegeB64, 1);
+check('弟弟 base64', didiB64, 1);
 check('无照片文件路径', 'src="照片/', 0);
 check('无外部 script src', '<script src="lib/', 0);
 check('EMBEDDED_BANKS', 'const EMBEDDED_BANKS', 1);
