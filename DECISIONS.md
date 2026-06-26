@@ -119,3 +119,19 @@
 - 三模式复用同一 `spell` 结构，改一处全生效。
 - 填满后 `cursor=-1`，继续敲字母会被挡（`handleLetter` 开头 `cursor<0 return`）；改字靠退格回退。若未来要支持"填满后覆盖最后字母"，需调整该判断。
 - `keydown` 加 `Enter` 分支；虚拟键盘 `buildKeyboard` 加"⏎ 提交"键（触屏等价回车）。
+
+---
+
+## 2026-06-26 — 介词专项模式 prep（type=prep 隔离 + 选择即提交）
+
+**决定**：新增第 6 种模式 `prep`（介词专项），仅哥哥可见。新词库 `grade4-prep.json`（50 组固定搭配，`type:"prep"`），用新 type 隔离：`isItemUsable("prep", it)` 只收 `type==="prep"&&it.prep`，原有 5 模式因判断 `word/phrase` 天然不收 prep 条目。题目展示含义 + 搭配带空格 + 例句带空格（两处联动），从 4 个介词选 1。干扰项优先 `confusables`（词库预置易混淆介词）> 同 `category` > 全局池 `PREP_POOL`。
+
+**理由**：四年级介词固定搭配是考点专项，需独立模式强化辨析。用 `type:"prep"` 隔离避免介词搭配混进拼写/意思闯关。干扰项优先易混淆介词（呼应词库"易混淆搭配对比"节），教学价值最高。例句空格运行时正则定位（`\bprep\b` 首个），比词库预置位置灵活——例句改了不用改代码。
+
+**影响**：
+- 新增 `renderPrep`/`buildPrepOptions`/`choosePrep`/`fillPrepBlanks` + `PREP_POOL` 常量；`MODES` 加 prep、`isItemUsable` 加分支、`nextQuestion` render 映射加 prep。
+- `enterScope` 改为过滤无可用题的模式（`scopeItems().some(isItemUsable)`）——这同时让弟弟词库模式页不显示介词专项（弟弟无 prep 条目）。**此改动是通用的**：今后任何只服务特定年级的模式都靠此机制隐藏。
+- 介词模块**选择即提交**（同 mean1/mean2），不引入回车——介词四选一点一下即定，不存在"最后字母敲错来不及改"问题。
+- 复用 `judge`/`speak`/错题本/冰淇淋/备份，无新 store 字段。
+- prep 词库 `child:"哥哥"`，天然只在哥哥名下显示，无需硬编码身份判断。
+- build-share 5 库 286 条、build-local 8 库 396 条；verify 断言同步更新。

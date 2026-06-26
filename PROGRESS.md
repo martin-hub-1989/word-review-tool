@@ -6,7 +6,7 @@
 
 ## 当前状态
 
-维护期，无进行中任务。三版本稳定可用，工作区干净，最新提交 `a9fd814` 已推送至 `origin/main`。
+维护期，无进行中任务。三版本稳定可用，工作区干净，最新提交 `0eaa126` 已推送至 `origin/main`。
 
 ## 已完成
 
@@ -35,6 +35,7 @@
 - [x] 备份导入/导出（`JSON.stringify(store)`，自动覆盖所有字段含冰淇淋进度）
 - [x] 发音主动选最自然 voice（`bestEnglishVoice`：自然音 > 高质量本地 > 默认；页面加载预热 voice 列表）→ 提交 `bff07d3`
 - [x] 拼写/完形回车提交（填满不自动判，按回车或"⏎ 提交"键才判；未填满回车提示剩余数）→ 提交 `a9fd814`
+- [x] 介词专项模式 prep（仅哥哥，type=prep 隔离；含义+搭配带空格+例句带空格联动；干扰项易混淆优先；选择即提交）→ 提交 `7614255`/`c65bd9c`/`3b7de4e`/`0eaa126`
 
 ### Bug 修复（近期，含根因）
 - [x] `loadStore` 字段补全（migration）→ 旧版 localStorage 缺 `correctTotal`/`iceCream` 或 `banks=null` 导致启动崩溃（`updateIceCreamDisplay` 抛异常，词库未注入、点击未绑定）→ 提交 `4edf28a`
