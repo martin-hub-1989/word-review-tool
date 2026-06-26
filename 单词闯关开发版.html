@@ -142,6 +142,10 @@
   .feedback.show-answer .ans-mean{font-size:18px;color:var(--ink);opacity:.85;}
   .feedback.hint-sub{color:var(--blue);font-size:17px;}
   .key.submit-key{background:var(--green);color:#fff;}
+  .prep-q{font-size:clamp(24px,5vw,34px);font-weight:800;text-align:center;margin:14px 0;letter-spacing:.5px;}
+  .prep-example{font-size:clamp(17px,3.5vw,21px);text-align:center;color:var(--muted);margin:6px 0 18px;}
+  .prep-blank{display:inline-block;min-width:42px;color:var(--primary);border-bottom:3px solid var(--primary);margin:0 3px;text-align:center;}
+  .prep-blank.filled{color:var(--green);border-color:var(--green);}
 
   /* virtual keyboard */
   .keyboard{margin:22px auto 0;max-width:680px;padding:14px;background:var(--paper-2);
@@ -1175,6 +1179,80 @@ function drawClozeSlots(){
   if(spot){ const typed=spell.slots.map(s=>s.space?" ":(s.val||"_")).join(""); spot.textContent=typed; }
 }
 // 复用 handleLetter / checkSpellDone:cloze 下输入会同步更新句中空格(见 handleLetter)
+
+/* =========================================================
+   模式 ⑥ 介词专项 — 看含义选介词填空
+   ========================================================= */
+// 全局高频介词池(干扰项兜底)
+const PREP_POOL=["in","on","at","for","of","to","with","about","after","from"];
+function renderPrep(it){
+  const card=$("gameCard");
+  // 搭配空格: word 中把 prep 整词替换成空格 span
+  const colHTML = it.word.replace(
+    new RegExp("\\b"+escapeReg(it.prep)+"\\b","i"),
+    '<span class="prep-blank">___</span>'
+  );
+  // 例句空格: example 中 prep 整词(首个)替换成等长下划线空格
+  let exHTML = it.example || "";
+  if(exHTML){
+    exHTML = exHTML.replace(
+      new RegExp("\\b"+escapeReg(it.prep)+"\\b","i"),
+      m=>'<span class="prep-blank">'+m.replace(/./g,"_")+'</span>'
+    );
+  }
+  card.innerHTML=`
+    <div class="prompt-cn">${it.meaning}</div>
+    <button class="btn small speakbtn" id="spk">🔊 听发音</button>
+    <div class="prep-q">${colHTML}</div>
+    ${exHTML?`<div class="prep-example">${exHTML}</div>`:""}
+    <div class="options" id="opts"></div>
+    <p class="hint">用键盘按 1 / 2 / 3 / 4 选择</p>`;
+  $("spk").onclick=()=>speak(it.word);
+  const opts=buildPrepOptions(it);
+  const wrap=$("opts");
+  opts.forEach((o,i)=>{
+    const d=document.createElement("div"); d.className="option"; d.dataset.val=o;
+    d.innerHTML=`<span class="num">${i+1}</span><span>${o}</span>`;
+    d.onclick=()=>choosePrep(it, d, o===it.prep);
+    wrap.appendChild(d);
+  });
+  buildKeyboard(false);
+  game._opts={answer:it.prep, nodes:[...wrap.children]};
+  speak(it.word);
+}
+function buildPrepOptions(it){
+  const correct=it.prep;
+  let distract=[...(it.confusables||[])].filter(p=>p!==correct);
+  // 不足3个: 从同 category 其他条目的 prep 补
+  if(distract.length<3){
+    const sameCat=scopeItems()
+      .filter(x=>x.type==="prep"&&x.category===it.category&&x.prep!==correct)
+      .map(x=>x.prep);
+    for(const p of shuffle(sameCat)){ if(distract.length>=3) break; if(!distract.includes(p)&&p!==correct) distract.push(p); }
+  }
+  // 还不足: 全局池补
+  if(distract.length<3){
+    for(const p of PREP_POOL){ if(distract.length>=3) break; if(!distract.includes(p)&&p!==correct) distract.push(p); }
+  }
+  distract=distract.slice(0,3);
+  return shuffle([correct, ...distract]);
+}
+// 介词选择判定: 复用 judge, 答错标出正确介词, 答完填入空格
+function choosePrep(it, node, isRight){
+  if(game.attempted) return;
+  node.classList.add(isRight?"right":"wrong");
+  if(!isRight){
+    game._opts.nodes.forEach(n=>{ if(n.dataset.val===it.prep) n.classList.add("right"); });
+  }
+  fillPrepBlanks(it.prep); // 答完把正确介词填入空格(视觉反馈)
+  judge(it, isRight);
+}
+// 选中介词后填入所有空格(搭配+例句联动)
+function fillPrepBlanks(prep){
+  document.querySelectorAll(".prep-blank").forEach(el=>{
+    el.textContent=prep; el.classList.add("filled");
+  });
+}
 
 /* =========================================================
    键盘事件(物理键盘)
