@@ -140,6 +140,8 @@
   .feedback.show-answer .ans-word{font-size:32px;font-weight:800;letter-spacing:1px;color:var(--teal);line-height:1.2;}
   .feedback.show-answer .ans-word .ans-ipa{font-size:18px;font-style:italic;font-weight:600;margin-left:8px;color:var(--muted);}
   .feedback.show-answer .ans-mean{font-size:18px;color:var(--ink);opacity:.85;}
+  .feedback.hint-sub{color:var(--blue);font-size:17px;}
+  .key.submit-key{background:var(--green);color:#fff;}
 
   /* virtual keyboard */
   .keyboard{margin:22px auto 0;max-width:680px;padding:14px;background:var(--paper-2);
@@ -794,11 +796,13 @@ function buildKeyboard(showLetters){
     });
     kb.appendChild(r);
   });
-  // 退格行
+  // 退格行 + 提交键
   const r=document.createElement("div"); r.className="krow";
   const bk=document.createElement("div"); bk.className="key wide"; bk.dataset.k="Backspace"; bk.textContent="⌫ 删除";
   bk.onclick=()=>handleBackspace();
-  r.appendChild(bk); kb.appendChild(r);
+  const sk=document.createElement("div"); sk.className="key wide submit-key"; sk.dataset.k="Enter"; sk.textContent="⏎ 提交";
+  sk.onclick=()=>submitSpell(game.queue[game.idx]);
+  r.appendChild(bk); r.appendChild(sk); kb.appendChild(r);
 }
 function highlightKey(ch){
   document.querySelectorAll(".key").forEach(k=>k.classList.remove("hl")); // 先清掉所有高亮
@@ -915,8 +919,25 @@ function handleBackspace(){
   if(i>=0){ spell.slots[i].val=""; spell.slots[i].filled=false; spell.cursor=i; drawSlots(); if(game.mode==="cloze") syncBlank(); }
 }
 function checkSpellDone(it){
+  // 填满后不自动提交:只标记状态 + 视觉提示,等回车(submitSpell)才判对错
   const allFilled=spell.slots.every(s=>s.fixed||s.space||s.val);
-  if(!allFilled) return;
+  if(allFilled){
+    spell.cursor=-1; // 填满后光标收起
+    drawSlots();
+    const fb=$("feedback");
+    if(fb && !game.attempted){ fb.innerHTML='填满啦!按 <b>回车 ⏎</b> 提交'; fb.className="feedback hint-sub"; }
+    highlightKey(null);
+  }
+}
+function submitSpell(it){
+  if(!spell || !game || game.attempted) return;
+  const allFilled=spell.slots.every(s=>s.fixed||s.space||s.val);
+  if(!allFilled){
+    const remain=spell.slots.filter(s=>!s.fixed&&!s.space&&!s.val).length;
+    const fb=$("feedback");
+    if(fb){ fb.innerHTML='还有 <b>'+remain+'</b> 个字母没填,继续!'; fb.className="feedback hint-sub"; }
+    return;
+  }
   const typed=spell.slots.map(s=> s.space?" ":(s.fixed?s.ch:s.val)).join("");
   judge(it, typed===spell.answer);
 }
@@ -1030,6 +1051,7 @@ document.addEventListener("keydown",(e)=>{
   if(game.mode==="spell1"||game.mode==="spell2"||game.mode==="cloze"){
     if(/^[a-zA-Z]$/.test(k)){ e.preventDefault(); handleLetter(k); }
     else if(k==="Backspace"){ e.preventDefault(); handleBackspace(); }
+    else if(k==="Enter"){ e.preventDefault(); submitSpell(game.queue[game.idx]); }
   }
 });
 function syncBlank(){ const spot=$("blankSpot"); if(spot&&spell){ const typed=spell.slots.map(s=>s.space?" ":(s.val||"_")).join(""); spot.textContent=typed; } }
